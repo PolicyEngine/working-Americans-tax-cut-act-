@@ -16,9 +16,9 @@ import {
 } from 'recharts';
 
 const FILING_STATUSES = [
-  { key: 'single', label: 'Single', exemption: 46_000, stdDed: 16_100, color: '#2563eb' },
-  { key: 'hoh', label: 'Head of household', exemption: 64_400, stdDed: 24_150, color: '#059669' },
-  { key: 'joint', label: 'Married filing jointly', exemption: 92_000, stdDed: 32_200, color: '#7c3aed' },
+  { key: 'single', label: 'Single', exemption: 46_000, stdDed: 16_100, color: '#319795' },
+  { key: 'hoh', label: 'Head of household', exemption: 64_400, stdDed: 24_150, color: '#285E61' },
+  { key: 'joint', label: 'Married filing jointly', exemption: 92_000, stdDed: 32_200, color: '#1D4044' },
 ];
 
 const PHASE_OUT_MULTIPLE = 1.75;
