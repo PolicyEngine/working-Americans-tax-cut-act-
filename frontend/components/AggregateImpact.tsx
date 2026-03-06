@@ -229,7 +229,7 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
           {/* Relative impact by decile (primary) */}
           <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-3">Relative impact by income decile</h3>
-            <div className="bg-white border rounded-lg p-6">
+            <div>
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart data={Object.entries(data.decile.relative).map(([k, v]) => ({ decile: k, value: v * 100 }))} margin={CHART_MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
@@ -250,7 +250,7 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
           {/* Average absolute impact by decile (secondary) */}
           <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-3">Average impact by income decile</h3>
-            <div className="bg-white border rounded-lg p-6">
+            <div>
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart data={Object.entries(data.decile.average).map(([k, v]) => ({ decile: k, value: v }))} margin={CHART_MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
@@ -321,7 +321,7 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
             {/* Stacked bar chart by decile */}
             <div>
               <h3 className="text-lg font-semibold text-gray-800 mb-3">Winners & losers by income decile</h3>
-              <div className="bg-white border rounded-lg p-6">
+              <div>
                 <ResponsiveContainer width="100%" height={400}>
                   <BarChart data={stackedData} layout="vertical" stackOffset="expand" barSize={24} margin={CHART_MARGIN}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
@@ -383,7 +383,7 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-800 mb-3">Change in poverty rates (pp)</h3>
-              <div className="bg-white border rounded-lg p-6">
+              <div>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={chartData} margin={CHART_MARGIN}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />

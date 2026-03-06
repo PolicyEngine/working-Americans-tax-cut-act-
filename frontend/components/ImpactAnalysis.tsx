@@ -105,7 +105,7 @@ export default function ImpactAnalysis({ request, triggered, maxEarnings }: Prop
       <hr className="border-gray-200" />
 
       {/* Chart */}
-      <div className="bg-white border rounded-lg p-6">
+      <div>
         <h3 className="text-lg font-semibold mb-4 text-gray-800">
           Change in Net Income from WATCA Reform by Adjusted Gross Income ({request?.year ?? 2026})
         </h3>
