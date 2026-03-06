@@ -182,11 +182,6 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
             }`}>
               {formatBillions(data.budget.budgetary_impact)}
             </p>
-            <p className="text-xs text-gray-600 mt-2">
-              {data.budget.budgetary_impact >= 0
-                ? 'Net revenue gain for the federal government'
-                : 'Net cost to the federal government'}
-            </p>
           </div>
 
           {/* Income bracket table */}
