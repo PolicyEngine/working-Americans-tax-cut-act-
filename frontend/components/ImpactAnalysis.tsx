@@ -136,22 +136,30 @@ export default function ImpactAnalysis({ request, triggered, maxEarnings }: Prop
               dot={false}
             />
             {request && request.income <= xMax && (
-              <ReferenceDot
-                x={request.income}
-                y={benefitData.difference}
-                r={6}
-                fill="#319795"
-                stroke="#fff"
-                strokeWidth={2}
-                label={{
-                  value: `You: ${formatCurrency(benefitData.difference)}`,
-                  position: 'top',
-                  fill: '#374151',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  offset: 12,
-                }}
-              />
+              <>
+                <ReferenceLine
+                  x={request.income}
+                  stroke="#374151"
+                  strokeDasharray="4 4"
+                  strokeWidth={1}
+                  label={{ value: formatCurrency(request.income), position: 'insideBottomLeft', fill: '#374151', fontSize: 11 }}
+                />
+                <ReferenceLine
+                  y={benefitData.difference}
+                  stroke="#374151"
+                  strokeDasharray="4 4"
+                  strokeWidth={1}
+                  label={{ value: formatCurrency(benefitData.difference), position: 'insideTopLeft', fill: '#374151', fontSize: 11 }}
+                />
+                <ReferenceDot
+                  x={request.income}
+                  y={benefitData.difference}
+                  r={6}
+                  fill="#319795"
+                  stroke="#fff"
+                  strokeWidth={2}
+                />
+              </>
             )}
           </LineChart>
         </ResponsiveContainer>
