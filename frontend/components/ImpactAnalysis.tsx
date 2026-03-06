@@ -125,7 +125,14 @@ export default function ImpactAnalysis({ request, triggered, maxEarnings }: Prop
               formatter={(value: number) => formatCurrency(value)}
               labelFormatter={(value: number) => `Income: ${formatCurrency(value)}`}
             />
-            <Legend />
+            <Legend
+              payload={[
+                { value: 'Change in Net Income', type: 'line', color: '#319795' },
+                ...(request && request.income <= xMax
+                  ? [{ value: 'Your household', type: 'circle' as const, color: '#319795' }]
+                  : []),
+              ]}
+            />
             <ReferenceLine y={0} stroke="#666" strokeWidth={2} />
             <Line
               type="monotone"
