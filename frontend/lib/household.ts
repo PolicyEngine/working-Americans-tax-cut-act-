@@ -17,8 +17,10 @@ function addMemberToUnits(situation: Record<string, any>, memberId: string) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function buildHouseholdSituation(params: HouseholdRequest): Record<string, any> {
-  const { age_head, age_spouse, dependent_ages, year, max_earnings, state_code } = params;
+  const { age_head, age_spouse, dependent_ages, income, year, max_earnings, state_code } = params;
   const yearStr = String(year);
+  // Ensure the axis covers at least up to the user's income for accurate interpolation
+  const axisMax = Math.max(max_earnings, income);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const situation: Record<string, any> = {
@@ -42,8 +44,8 @@ export function buildHouseholdSituation(params: HouseholdRequest): Record<string
       {
         name: "adjusted_gross_income",
         min: 0,
-        max: max_earnings,
-        count: Math.min(4001, Math.max(501, Math.floor(max_earnings / 500))),
+        max: axisMax,
+        count: Math.min(4001, Math.max(501, Math.floor(axisMax / 500))),
         period: yearStr,
         target: "tax_unit",
       },
