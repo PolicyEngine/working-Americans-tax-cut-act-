@@ -186,22 +186,13 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
             </p>
           </div>
 
-          {/* Breakdown cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
-              <p className="text-sm text-gray-600 mb-2">Tax Revenue Impact</p>
-              <p className={`text-2xl font-bold ${data.budget.tax_revenue_impact >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatBillions(data.budget.tax_revenue_impact)}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">Change in federal tax revenue</p>
-            </div>
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
-              <p className="text-sm text-gray-600 mb-2">Benefit Spending Impact</p>
-              <p className={`text-2xl font-bold ${data.budget.benefit_spending_impact <= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatBillions(data.budget.benefit_spending_impact)}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">Change in benefit spending</p>
-            </div>
+          {/* Tax revenue card */}
+          <div className="bg-white rounded-lg p-6 border border-gray-200">
+            <p className="text-sm text-gray-600 mb-2">Tax Revenue Impact</p>
+            <p className={`text-2xl font-bold ${data.budget.tax_revenue_impact >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatBillions(data.budget.tax_revenue_impact)}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">Change in federal tax revenue</p>
           </div>
 
           {/* Income bracket chart */}
