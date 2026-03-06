@@ -69,6 +69,7 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
   const [selectedYear, setSelectedYear] = useState(2026);
   const { data, isLoading, error } = useAggregateImpact(surtaxEnabled, triggered, selectedYear);
   const [activeSection, setActiveSection] = useState<'fiscal' | 'distributional' | 'winners' | 'poverty'>('fiscal');
+  const [distMode, setDistMode] = useState<'relative' | 'absolute'>('relative');
 
   if (!triggered) return null;
 
@@ -188,25 +189,25 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
           <div>
             <h3 className="text-xl font-bold text-gray-800 mb-4">Impact by income bracket</h3>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-300">
+              <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-gray-50">
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Income bracket</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">Affected households</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">Total impact</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">Average impact</th>
+                  <tr className="border-b border-gray-300">
+                    <th className="text-left px-4 py-3 font-medium text-gray-900">Income bracket</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-900">Affected households</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-900">Total impact</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-900">Average impact</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {data.by_income_bracket.map((bracket, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm text-gray-900">{bracket.bracket}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900 text-right">{Math.round(bracket.beneficiaries).toLocaleString()}</td>
-                      <td className="px-4 py-3 text-sm font-semibold text-right"
+                    <tr key={index} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 text-gray-900">{bracket.bracket}</td>
+                      <td className="px-4 py-3 text-gray-700 text-right">{Math.round(bracket.beneficiaries).toLocaleString()}</td>
+                      <td className="px-4 py-3 font-semibold text-right"
                         style={{ color: bracket.total_cost >= 0 ? COLORS.positive : COLORS.negative }}>
                         {formatBillions(bracket.total_cost)}
                       </td>
-                      <td className="px-4 py-3 text-sm font-semibold text-right"
+                      <td className="px-4 py-3 font-semibold text-right"
                         style={{ color: bracket.avg_benefit >= 0 ? COLORS.positive : COLORS.negative }}>
                         {formatCurrencyWithSign(bracket.avg_benefit)}
                       </td>
@@ -220,55 +221,71 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
       )}
 
       {/* ===== DISTRIBUTIONAL IMPACT ===== */}
-      {activeSection === 'distributional' && (
-        <div className="space-y-6">
-          <p className="text-gray-700">
-            Impact on household net income by income decile. Decile 1 is the lowest income, decile 10 is the highest.
-          </p>
+      {activeSection === 'distributional' && (() => {
+        const isRelative = distMode === 'relative';
+        const rawValues = isRelative
+          ? Object.values(data.decile.relative).map(v => v * 100)
+          : Object.values(data.decile.average);
+        const maxAbs = Math.max(...rawValues.map(Math.abs));
+        const symmetricDomain = [-maxAbs, maxAbs];
+        const chartData = isRelative
+          ? Object.entries(data.decile.relative).map(([k, v]) => ({ decile: k, value: v * 100 }))
+          : Object.entries(data.decile.average).map(([k, v]) => ({ decile: k, value: v }));
 
-          {/* Relative impact by decile (primary) */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Relative impact by income decile</h3>
-            <div className="bg-white border rounded-lg p-6">
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={Object.entries(data.decile.relative).map(([k, v]) => ({ decile: k, value: v * 100 }))} margin={CHART_MARGIN}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                  <XAxis dataKey="decile" tick={TICK_STYLE} stroke="#A0AEC0" label={{ value: 'Income Decile', position: 'insideBottom', offset: -15, style: { ...TICK_STYLE, fill: '#718096' } }} />
-                  <YAxis tickFormatter={(v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`} tick={TICK_STYLE} stroke="#A0AEC0" width={60} />
-                  <Tooltip content={<CustomTooltip formatter={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`} />} />
-                  <ReferenceLine y={0} stroke="#A0AEC0" strokeWidth={1} />
-                  <Bar dataKey="value" name="Relative Impact (% of income)" radius={[2, 2, 0, 0]}>
-                    {Object.values(data.decile.relative).map((v, i) => (
-                      <Cell key={i} fill={v >= 0 ? COLORS.positive : COLORS.negative} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <h3 className="text-lg font-semibold text-gray-800">Impact by income decile</h3>
+              <div className="flex gap-1">
+                {(['relative', 'absolute'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setDistMode(mode)}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      distMode === mode
+                        ? 'bg-primary-500 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {mode === 'relative' ? 'Relative' : 'Absolute'}
+                  </button>
+                ))}
+              </div>
             </div>
+            <p className="text-gray-700">
+              {isRelative
+                ? 'Change in household net income as a percentage of baseline income, by decile.'
+                : 'Average change in household net income in dollars, by decile.'}
+            </p>
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart data={chartData} margin={CHART_MARGIN}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                <XAxis dataKey="decile" tick={TICK_STYLE} stroke="#A0AEC0" label={{ value: 'Income decile', position: 'insideBottom', offset: -15, style: { ...TICK_STYLE, fill: '#718096' } }} />
+                <YAxis
+                  domain={symmetricDomain}
+                  tickFormatter={isRelative
+                    ? (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`
+                    : formatCurrencyWithSign}
+                  tick={TICK_STYLE}
+                  stroke="#A0AEC0"
+                  width={isRelative ? 60 : 80}
+                  allowDecimals={false}
+                />
+                <Tooltip content={<CustomTooltip formatter={isRelative
+                  ? (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`
+                  : (v) => formatCurrencyWithSign(v)} />}
+                />
+                <ReferenceLine y={0} stroke="#A0AEC0" strokeWidth={1} />
+                <Bar dataKey="value" name={isRelative ? 'Relative impact (% of income)' : 'Average impact'} radius={[2, 2, 0, 0]}>
+                  {rawValues.map((v, i) => (
+                    <Cell key={i} fill={v >= 0 ? COLORS.positive : COLORS.negative} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
-
-          {/* Average absolute impact by decile (secondary) */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Average impact by income decile</h3>
-            <div className="bg-white border rounded-lg p-6">
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={Object.entries(data.decile.average).map(([k, v]) => ({ decile: k, value: v }))} margin={CHART_MARGIN}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                  <XAxis dataKey="decile" tick={TICK_STYLE} stroke="#A0AEC0" label={{ value: 'Income Decile', position: 'insideBottom', offset: -15, style: { ...TICK_STYLE, fill: '#718096' } }} />
-                  <YAxis tickFormatter={formatCurrencyWithSign} tick={TICK_STYLE} stroke="#A0AEC0" width={80} />
-                  <Tooltip content={<CustomTooltip formatter={(v) => formatCurrencyWithSign(v)} />} />
-                  <ReferenceLine y={0} stroke="#A0AEC0" strokeWidth={1} />
-                  <Bar dataKey="value" name="Average Impact" radius={[2, 2, 0, 0]}>
-                    {Object.values(data.decile.average).map((v, i) => (
-                      <Cell key={i} fill={v >= 0 ? COLORS.positive : COLORS.negative} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ===== WINNERS & LOSERS ===== */}
       {activeSection === 'winners' && (() => {
@@ -321,7 +338,7 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
             {/* Stacked bar chart by decile */}
             <div>
               <h3 className="text-lg font-semibold text-gray-800 mb-3">Winners & losers by income decile</h3>
-              <div className="bg-white border rounded-lg p-6">
+              <div>
                 <ResponsiveContainer width="100%" height={400}>
                   <BarChart data={stackedData} layout="vertical" stackOffset="expand" barSize={24} margin={CHART_MARGIN}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
@@ -383,12 +400,12 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-800 mb-3">Change in poverty rates (pp)</h3>
-              <div className="bg-white border rounded-lg p-6">
+              <div>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={chartData} margin={CHART_MARGIN}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                     <XAxis dataKey="label" tick={TICK_STYLE} stroke="#A0AEC0" />
-                    <YAxis tickFormatter={(v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}pp`} tick={TICK_STYLE} stroke="#A0AEC0" width={70} />
+                    <YAxis tickFormatter={(v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}pp`} tick={TICK_STYLE} stroke="#A0AEC0" width={70} allowDecimals={false} />
                     <Tooltip content={<CustomTooltip formatter={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}pp`} />} />
                     <ReferenceLine y={0} stroke="#A0AEC0" strokeWidth={1} />
                     <Bar dataKey="ppChange" name="Change (pp)" radius={[2, 2, 0, 0]}>
