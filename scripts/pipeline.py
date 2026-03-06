@@ -153,12 +153,13 @@ def _run_year_subprocess(year: int) -> dict:
     """Run both variants for one year in a subprocess to isolate memory."""
     worker_script = os.path.join(os.path.dirname(__file__), "_pipeline_worker.py")
     proc = subprocess.run(
-        [sys.executable, worker_script, str(year)],
-        capture_output=True,
+        [sys.executable, "-u", worker_script, str(year)],
+        capture_output=False,
+        stderr=None,  # inherit stderr so progress shows in real-time
+        stdout=subprocess.PIPE,
         text=True,
     )
     if proc.returncode != 0:
-        print(f"Worker stderr for {year}:\n{proc.stderr}")
         raise RuntimeError(f"Worker failed for year {year}")
     return json.loads(proc.stdout)
 
