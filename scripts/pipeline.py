@@ -3,19 +3,21 @@
 Runs microsimulation for both reform variants (with/without surtax)
 across multiple years and saves output to frontend/public/data/ as CSV files.
 
+Uses subprocess isolation per year to prevent memory accumulation.
+
 Usage:
     python scripts/pipeline.py
 """
 
+import gc
+import json
 import os
+import subprocess
 import sys
 
-import numpy as np
 import pandas as pd
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from watca_calc.microsimulation import calculate_aggregate_impact
 
 # Default output directory — Next.js serves files from public/
 DEFAULT_OUTPUT_DIR = os.path.join(
@@ -132,7 +134,36 @@ def _extract_income_brackets(result: dict, variant: str, year: int) -> list[dict
     ]
 
 
-def generate_all_data(output_dir: str = None) -> dict[str, pd.DataFrame]:
+def _run_year_in_process(year: int) -> dict:
+    """Run both surtax variants for a single year, then free memory."""
+    from watca_calc.microsimulation import calculate_aggregate_impact
+
+    results = {}
+    for surtax_enabled, variant in [(True, "with_surtax"), (False, "without_surtax")]:
+        print(f"  Computing {variant}...")
+        results[variant] = calculate_aggregate_impact(
+            surtax_enabled=surtax_enabled, year=year
+        )
+        gc.collect()
+
+    return results
+
+
+def _run_year_subprocess(year: int) -> dict:
+    """Run both variants for one year in a subprocess to isolate memory."""
+    worker_script = os.path.join(os.path.dirname(__file__), "_pipeline_worker.py")
+    proc = subprocess.run(
+        [sys.executable, worker_script, str(year)],
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode != 0:
+        print(f"Worker stderr for {year}:\n{proc.stderr}")
+        raise RuntimeError(f"Worker failed for year {year}")
+    return json.loads(proc.stdout)
+
+
+def generate_all_data(output_dir: str = None, use_subprocess: bool = True) -> dict[str, pd.DataFrame]:
     """Generate all dashboard data as CSVs for all years and variants."""
     output_dir = output_dir or DEFAULT_OUTPUT_DIR
 
@@ -141,23 +172,21 @@ def generate_all_data(output_dir: str = None) -> dict[str, pd.DataFrame]:
     all_winners_losers = []
     all_income_brackets = []
 
-    total_runs = len(YEARS) * 2
-    run_count = 0
+    for i, year in enumerate(YEARS):
+        print(f"\n[{i + 1}/{len(YEARS)}] Year {year}...")
 
-    for year in YEARS:
-        for surtax_enabled, variant in [(True, "with_surtax"), (False, "without_surtax")]:
-            run_count += 1
-            print(f"\n[{run_count}/{total_runs}] Computing aggregate impact ({variant}, {year})...")
-            result = calculate_aggregate_impact(
-                surtax_enabled=surtax_enabled, year=year
-            )
+        if use_subprocess:
+            year_results = _run_year_subprocess(year)
+        else:
+            year_results = _run_year_in_process(year)
 
+        for variant, result in year_results.items():
             all_distributional.extend(_extract_distributional(result, variant, year))
             all_metrics.extend(_extract_metrics(result, variant, year))
             all_winners_losers.extend(_extract_winners_losers(result, variant, year))
             all_income_brackets.extend(_extract_income_brackets(result, variant, year))
 
-            print(f"  Done: {variant} {year}")
+        print(f"  Year {year} complete.")
 
     results = {
         "distributional_impact": pd.DataFrame(all_distributional),

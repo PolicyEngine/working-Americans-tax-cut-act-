@@ -34,10 +34,10 @@ def calculate_aggregate_impact(
     Returns:
         Dict matching PolicyEngine API output structure.
     """
-    reform = create_watca_reform(surtax_enabled=surtax_enabled, year=year)
+    reforms = create_watca_reform(surtax_enabled=surtax_enabled, year=year)
 
     sim_baseline = Microsimulation()
-    sim_reform = Microsimulation(reform=reform)
+    sim_reform = Microsimulation(reform=reforms)
 
     # ===== FISCAL IMPACT (budget) =====
     # Household-level net income change
