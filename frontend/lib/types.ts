@@ -31,7 +31,60 @@ export interface IncomeBracket {
   avg_benefit: number;
 }
 
+export interface BudgetImpact {
+  baseline_net_income: number;
+  budgetary_impact: number;
+  tax_revenue_impact: number;
+  benefit_spending_impact: number;
+  households: number;
+}
+
+export interface DecileImpact {
+  average: Record<string, number>;
+  relative: Record<string, number>;
+}
+
+export interface IntraDecileAll {
+  gain_more_than_5pct: number;
+  gain_less_than_5pct: number;
+  no_change: number;
+  lose_less_than_5pct: number;
+  lose_more_than_5pct: number;
+}
+
+export interface IntraDecileDeciles {
+  gain_more_than_5pct: number[];
+  gain_less_than_5pct: number[];
+  no_change: number[];
+  lose_less_than_5pct: number[];
+  lose_more_than_5pct: number[];
+}
+
+export interface IntraDecile {
+  all: IntraDecileAll;
+  deciles: IntraDecileDeciles;
+}
+
+export interface PovertyGroup {
+  baseline: number;
+  reform: number;
+}
+
+export interface PovertyCategory {
+  all: PovertyGroup;
+  child: PovertyGroup;
+}
+
+export interface PovertyImpact {
+  poverty: PovertyCategory;
+  deep_poverty: PovertyCategory;
+}
+
 export interface AggregateImpactResponse {
+  budget: BudgetImpact;
+  decile: DecileImpact;
+  intra_decile: IntraDecile;
+  poverty: PovertyImpact;
   total_cost: number;
   beneficiaries: number;
   avg_benefit: number;

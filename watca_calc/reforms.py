@@ -1,6 +1,6 @@
 """Create WATCA reform objects using PolicyEngine Reform.from_dict."""
 
-from policyengine_us import Reform
+from policyengine_core.reforms import Reform
 
 
 def create_watca_reform(surtax_enabled: bool = True, year: int = 2026) -> Reform:

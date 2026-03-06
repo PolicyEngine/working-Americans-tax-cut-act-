@@ -22,7 +22,28 @@ def _load_precomputed(surtax_enabled: bool) -> dict:
             detail=f"Precomputed data not available ({label}). Run scripts/precompute.py first.",
         )
     with open(path) as f:
-        return json.load(f)
+        data = json.load(f)
+
+    # Map JSON keys with spaces to Python-safe Pydantic field names
+    intra = data["intra_decile"]
+    data["intra_decile"] = {
+        "all": {
+            "gain_more_than_5pct": intra["all"]["Gain more than 5%"],
+            "gain_less_than_5pct": intra["all"]["Gain less than 5%"],
+            "no_change": intra["all"]["No change"],
+            "lose_less_than_5pct": intra["all"]["Lose less than 5%"],
+            "lose_more_than_5pct": intra["all"]["Lose more than 5%"],
+        },
+        "deciles": {
+            "gain_more_than_5pct": intra["deciles"]["Gain more than 5%"],
+            "gain_less_than_5pct": intra["deciles"]["Gain less than 5%"],
+            "no_change": intra["deciles"]["No change"],
+            "lose_less_than_5pct": intra["deciles"]["Lose less than 5%"],
+            "lose_more_than_5pct": intra["deciles"]["Lose more than 5%"],
+        },
+    }
+
+    return data
 
 
 @router.post("/aggregate-impact", response_model=AggregateImpactResponse)
