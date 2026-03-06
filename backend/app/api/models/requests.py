@@ -13,6 +13,7 @@ class HouseholdRequest(BaseModel):
     dependent_ages: list[int] = Field(default_factory=list)
     income: int = Field(..., ge=0)
     year: int = Field(2026, ge=2026, le=2030)
+    max_earnings: int = Field(2_000_000, ge=10_000, le=100_000_000)
     reform_params: ReformParams = Field(default_factory=ReformParams)
 
 

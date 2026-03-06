@@ -7,6 +7,7 @@ def build_household_situation(
     dependent_ages: list[int],
     year: int = 2026,
     with_axes: bool = False,
+    max_earnings: int = 2_000_000,
 ) -> dict:
     """
     Build a PolicyEngine household situation dict.
@@ -16,7 +17,8 @@ def build_household_situation(
         age_spouse: Age of spouse (None if single).
         dependent_ages: List of dependent ages.
         year: Tax year.
-        with_axes: If True, adds AGI sweep axis (0-$2M, 4001 points).
+        with_axes: If True, adds AGI sweep axis.
+        max_earnings: Maximum AGI for the sweep axis.
 
     Returns:
         PolicyEngine situation dict.
@@ -38,8 +40,8 @@ def build_household_situation(
                 {
                     "name": "adjusted_gross_income",
                     "min": 0,
-                    "max": 2_000_000,
-                    "count": 4_001,
+                    "max": max_earnings,
+                    "count": min(4_001, max(501, max_earnings // 500)),
                     "period": year,
                     "target": "tax_unit",
                 }

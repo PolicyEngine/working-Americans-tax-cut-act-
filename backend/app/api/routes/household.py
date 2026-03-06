@@ -19,5 +19,6 @@ async def household_impact(request: HouseholdRequest):
         income=request.income,
         surtax_enabled=request.reform_params.surtax_enabled,
         year=request.year,
+        max_earnings=request.max_earnings,
     )
     return result

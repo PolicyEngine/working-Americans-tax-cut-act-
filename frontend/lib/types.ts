@@ -8,6 +8,7 @@ export interface HouseholdRequest {
   dependent_ages: number[];
   income: number;
   year: number;
+  max_earnings: number;
   reform_params: ReformParams;
 }
 

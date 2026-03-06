@@ -50,4 +50,27 @@ def _load_precomputed(surtax_enabled: bool) -> dict:
 async def aggregate_impact(request: AggregateImpactRequest):
     """Return precomputed national aggregate impact."""
     data = _load_precomputed(request.surtax_enabled)
+    # Build nested poverty structure from flat keys
+    data["poverty"] = {
+        "poverty": {
+            "all": {
+                "baseline": data["poverty_baseline_rate"],
+                "reform": data["poverty_reform_rate"],
+            },
+            "child": {
+                "baseline": data["child_poverty_baseline_rate"],
+                "reform": data["child_poverty_reform_rate"],
+            },
+        },
+        "deep_poverty": {
+            "all": {
+                "baseline": data["deep_poverty_baseline_rate"],
+                "reform": data["deep_poverty_reform_rate"],
+            },
+            "child": {
+                "baseline": data["deep_child_poverty_baseline_rate"],
+                "reform": data["deep_child_poverty_reform_rate"],
+            },
+        },
+    }
     return AggregateImpactResponse(**data)

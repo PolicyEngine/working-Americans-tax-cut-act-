@@ -34,7 +34,7 @@ def main():
 
         output_path = os.path.join(OUTPUT_DIR, f"aggregate_{label}.json")
         with open(output_path, "w") as f:
-            json.dump(result, f, indent=2)
+            json.dump(result, f, indent=2, default=lambda o: float(o) if hasattr(o, 'item') else o)
         print(f"  Saved to {output_path}")
 
     print("Done.")

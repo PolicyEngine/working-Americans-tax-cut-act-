@@ -47,31 +47,21 @@ def calculate_aggregate_impact(
     sim_reform = Microsimulation(reform=reforms)
 
     # ===== FISCAL IMPACT (budget) =====
-    # Matches API: reform.total_tax - baseline.total_tax
-    net_income_baseline = sim_baseline.calculate(
-        "household_net_income", period=year, map_to="household"
-    )
-    net_income_reform = sim_reform.calculate(
-        "household_net_income", period=year, map_to="household"
-    )
-    income_change = net_income_reform - net_income_baseline
-
-    # Use income_tax (federal only) since WATCA is a federal reform
+    # Use income_tax (federal only) since WATCA is a federal reform.
+    # Do NOT use household_net_income — it includes state tax changes
+    # caused by states inheriting federal taxable_income.
     tax_revenue_baseline = sim_baseline.calculate(
         "income_tax", period=year, map_to="household"
     )
     tax_revenue_reform = sim_reform.calculate(
         "income_tax", period=year, map_to="household"
     )
-    tax_revenue_impact = float((tax_revenue_reform - tax_revenue_baseline).sum())
+    fed_tax_change = tax_revenue_reform - tax_revenue_baseline
+    tax_revenue_impact = float(fed_tax_change.sum())
 
-    benefit_baseline = sim_baseline.calculate(
-        "household_benefits", period=year, map_to="household"
-    )
-    benefit_reform = sim_reform.calculate(
-        "household_benefits", period=year, map_to="household"
-    )
-    benefit_spending_impact = float((benefit_reform - benefit_baseline).sum())
+    # Federal income change = negative of federal tax change
+    # (tax goes up → income goes down)
+    income_change = -fed_tax_change
 
     # Weights and AGI
     household_weight = sim_reform.calculate("household_weight", period=year)
@@ -81,10 +71,9 @@ def calculate_aggregate_impact(
 
     raw_weights = np.array(household_weight)
     total_households = raw_weights.sum()
-    baseline_net_income = float(net_income_baseline.sum())
 
-    # Budgetary impact = tax_revenue_impact - benefit_spending_impact
-    budgetary_impact = float(tax_revenue_impact - benefit_spending_impact)
+    # Budgetary impact = federal tax revenue change only
+    budgetary_impact = tax_revenue_impact
 
     # ===== WINNERS / LOSERS =====
     change_arr = np.array(income_change)

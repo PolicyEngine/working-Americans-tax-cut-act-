@@ -126,6 +126,10 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-primary">National Impact Analysis</h2>
 
+      <p className="text-sm text-gray-500 bg-gray-50 rounded-lg px-4 py-3 border border-gray-200">
+        These estimates are static: they do not capture behavioral responses such as changes in labor supply, tax avoidance, or migration.
+      </p>
+
       {/* Year selector */}
       <div>
         <p className="text-sm text-gray-500 mb-2">Select year</p>
