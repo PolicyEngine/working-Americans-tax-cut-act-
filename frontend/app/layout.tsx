@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Providers from "./providers";
+import Header from "@/components/Header";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Working Americans' Tax Cut Act Calculator",
+  title: "Working Americans' Tax Cut Act Calculator | PolicyEngine",
   description:
     "Calculate your personal and national impact under the Working Americans' Tax Cut Act",
 };
@@ -16,6 +17,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <Header />
         <Providers>{children}</Providers>
       </body>
     </html>
