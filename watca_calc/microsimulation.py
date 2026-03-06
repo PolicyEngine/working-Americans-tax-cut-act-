@@ -27,6 +27,17 @@ _INTRA_LABELS = [
 ]
 
 
+def _poverty_metrics(baseline_rate, reform_rate):
+    """Return rate change and percent change for a poverty metric."""
+    rate_change = reform_rate - baseline_rate
+    percent_change = (
+        rate_change / baseline_rate * 100
+        if baseline_rate > 0
+        else 0.0
+    )
+    return rate_change, percent_change
+
+
 def calculate_aggregate_impact(
     surtax_enabled: bool = True, year: int = 2026
 ) -> dict:
@@ -42,10 +53,8 @@ def calculate_aggregate_impact(
     tax_reform = sim_reform.calculate(
         "income_tax", period=year, map_to="household"
     )
-    fed_tax_change = tax_reform - tax_baseline
-    tax_revenue_impact = float(fed_tax_change.sum())
-    income_change = -fed_tax_change
-    budgetary_impact = tax_revenue_impact
+    income_change = tax_baseline - tax_reform
+    tax_revenue_impact = float(-income_change.sum())
 
     # Total households: (x * 0 + 1).sum() = sum(weights)
     total_households = float((income_change * 0 + 1).sum())
@@ -138,11 +147,8 @@ def calculate_aggregate_impact(
     )
     poverty_baseline_rate = float(pov_bl.mean() * 100)
     poverty_reform_rate = float(pov_rf.mean() * 100)
-    poverty_rate_change = poverty_reform_rate - poverty_baseline_rate
-    poverty_percent_change = (
-        poverty_rate_change / poverty_baseline_rate * 100
-        if poverty_baseline_rate > 0
-        else 0.0
+    poverty_rate_change, poverty_percent_change = _poverty_metrics(
+        poverty_baseline_rate, poverty_reform_rate
     )
 
     # Child/deep poverty needs age filtering — numpy required
@@ -162,13 +168,10 @@ def calculate_aggregate_impact(
 
     child_poverty_baseline_rate = _child_rate(pov_bl_arr)
     child_poverty_reform_rate = _child_rate(pov_rf_arr)
-    child_poverty_rate_change = (
-        child_poverty_reform_rate - child_poverty_baseline_rate
-    )
-    child_poverty_percent_change = (
-        child_poverty_rate_change / child_poverty_baseline_rate * 100
-        if child_poverty_baseline_rate > 0
-        else 0.0
+    child_poverty_rate_change, child_poverty_percent_change = (
+        _poverty_metrics(
+            child_poverty_baseline_rate, child_poverty_reform_rate
+        )
     )
 
     deep_bl = sim_baseline.calculate(
@@ -179,37 +182,30 @@ def calculate_aggregate_impact(
     )
     deep_poverty_baseline_rate = float(deep_bl.mean() * 100)
     deep_poverty_reform_rate = float(deep_rf.mean() * 100)
-    deep_poverty_rate_change = (
-        deep_poverty_reform_rate - deep_poverty_baseline_rate
-    )
-    deep_poverty_percent_change = (
-        deep_poverty_rate_change / deep_poverty_baseline_rate * 100
-        if deep_poverty_baseline_rate > 0
-        else 0.0
+    deep_poverty_rate_change, deep_poverty_percent_change = (
+        _poverty_metrics(
+            deep_poverty_baseline_rate, deep_poverty_reform_rate
+        )
     )
 
     deep_bl_arr = np.array(deep_bl).astype(bool)
     deep_rf_arr = np.array(deep_rf).astype(bool)
     deep_child_poverty_baseline_rate = _child_rate(deep_bl_arr)
     deep_child_poverty_reform_rate = _child_rate(deep_rf_arr)
-    deep_child_poverty_rate_change = (
-        deep_child_poverty_reform_rate - deep_child_poverty_baseline_rate
-    )
-    deep_child_poverty_percent_change = (
-        deep_child_poverty_rate_change
-        / deep_child_poverty_baseline_rate
-        * 100
-        if deep_child_poverty_baseline_rate > 0
-        else 0.0
+    deep_child_poverty_rate_change, deep_child_poverty_percent_change = (
+        _poverty_metrics(
+            deep_child_poverty_baseline_rate,
+            deep_child_poverty_reform_rate,
+        )
     )
 
     # ===== INCOME BRACKET BREAKDOWN =====
     agi = sim_reform.calculate(
         "adjusted_gross_income", period=year, map_to="household"
     )
-    # Need numpy for multi-condition masking with AGI ranges
     agi_arr = np.array(agi)
     change_arr = np.array(income_change)
+    affected_mask = np.abs(change_arr) > 1
 
     income_brackets = [
         (0, 50_000, "Under $50k"),
@@ -226,7 +222,7 @@ def calculate_aggregate_impact(
         mask = (
             (agi_arr >= min_inc)
             & (agi_arr < max_inc)
-            & (np.abs(change_arr) > 1)
+            & affected_mask
         )
         bracket_affected = float(weight_arr[mask].sum())
         if bracket_affected > 0:
@@ -248,7 +244,7 @@ def calculate_aggregate_impact(
 
     return {
         "budget": {
-            "budgetary_impact": budgetary_impact,
+            "budgetary_impact": tax_revenue_impact,
             "tax_revenue_impact": tax_revenue_impact,
             "benefit_spending_impact": 0.0,
             "households": total_households,
@@ -261,7 +257,7 @@ def calculate_aggregate_impact(
             "all": intra_decile_all,
             "deciles": intra_decile_deciles,
         },
-        "total_cost": float(income_change.sum()),
+        "total_cost": -tax_revenue_impact,
         "beneficiaries": beneficiaries,
         "avg_benefit": avg_benefit,
         "winners": winners,

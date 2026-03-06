@@ -16,7 +16,6 @@ class Settings(BaseSettings):
         "http://localhost:3006",
         "http://localhost:3007",
         "http://localhost:8080",
-        "http://localhost:3007",
     ]
     host: str = "0.0.0.0"
     port: int = 8000
