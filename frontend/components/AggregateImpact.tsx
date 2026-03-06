@@ -186,7 +186,6 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
               {data.budget.budgetary_impact >= 0
                 ? 'Net revenue gain for the federal government'
                 : 'Net cost to the federal government'}
-              {' '}({formatBillions(-data.budget.budgetary_impact)} change in household net income)
             </p>
           </div>
 
