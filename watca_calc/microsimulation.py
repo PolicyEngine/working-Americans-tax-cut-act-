@@ -79,8 +79,9 @@ def calculate_aggregate_impact(
     decile = sim_baseline.calculate(
         "household_income_decile", period=year, map_to="household"
     )
+    # Use income_tax (not household_net_income) to isolate federal impact
     baseline_net_income = sim_baseline.calculate(
-        "household_net_income", period=year, map_to="household"
+        "income_tax", period=year, map_to="household"
     )
 
     decile_average = {}

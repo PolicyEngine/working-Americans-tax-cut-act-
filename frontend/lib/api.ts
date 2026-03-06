@@ -84,13 +84,14 @@ export const api = {
     request: HouseholdRequest
   ): Promise<HouseholdImpactResponse> {
     const household = buildHouseholdSituation(request);
-    const reform = buildReform(request.reform_params.surtax_enabled);
+    const policy = buildReform(request.reform_params.surtax_enabled);
     const yearStr = String(request.year);
 
     // Run baseline and reform in parallel
+    // PE API v1 uses "policy" (not "reform") for parameter overrides
     const [baselineResult, reformResult] = await Promise.all([
       peCalculate({ household }),
-      peCalculate({ household, reform }),
+      peCalculate({ household, policy }),
     ]);
 
     // Extract net income arrays (PE API wraps response in "result")
