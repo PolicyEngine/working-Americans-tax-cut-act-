@@ -1,8 +1,8 @@
 """Aggregate impact calculations using enhanced CPS microsimulation.
 
-Uses federal income_tax only (not household_net_income) to isolate WATCA's
-federal impact from indirect state tax effects caused by states inheriting
-federal taxable_income.
+Calculates both federal income_tax and state_income_tax to show separate
+federal and state/local revenue impacts. Winners/losers and decile
+analysis use the combined (federal + state) income change.
 
 Uses MicroSeries throughout where possible. MicroSeries.sum() is
 automatically weighted, and boolean masks preserve entity alignment.
@@ -47,14 +47,25 @@ def calculate_aggregate_impact(
     sim_reform = Microsimulation(reform=reforms)
 
     # ===== FISCAL IMPACT =====
-    tax_baseline = sim_baseline.calculate(
+    fed_baseline = sim_baseline.calculate(
         "income_tax", period=year, map_to="household"
     )
-    tax_reform = sim_reform.calculate(
+    fed_reform = sim_reform.calculate(
         "income_tax", period=year, map_to="household"
     )
-    income_change = tax_baseline - tax_reform
-    tax_revenue_impact = float(-income_change.sum())
+    federal_tax_revenue_impact = float(-(fed_baseline - fed_reform).sum())
+
+    state_baseline = sim_baseline.calculate(
+        "state_income_tax", period=year, map_to="household"
+    )
+    state_reform = sim_reform.calculate(
+        "state_income_tax", period=year, map_to="household"
+    )
+    state_tax_revenue_impact = float(-(state_baseline - state_reform).sum())
+
+    # Combined income change for winners/losers/deciles
+    income_change = (fed_baseline - fed_reform) + (state_baseline - state_reform)
+    tax_revenue_impact = federal_tax_revenue_impact + state_tax_revenue_impact
 
     # Total households: (x * 0 + 1).sum() = sum(weights)
     total_households = float((income_change * 0 + 1).sum())
@@ -245,6 +256,8 @@ def calculate_aggregate_impact(
     return {
         "budget": {
             "budgetary_impact": tax_revenue_impact,
+            "federal_tax_revenue_impact": federal_tax_revenue_impact,
+            "state_tax_revenue_impact": state_tax_revenue_impact,
             "tax_revenue_impact": tax_revenue_impact,
             "benefit_spending_impact": 0.0,
             "households": total_households,
