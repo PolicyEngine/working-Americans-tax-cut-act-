@@ -184,7 +184,8 @@ function HouseholdImpactTab() {
             <input
               type="number"
               value={ageHead}
-              onChange={(e) => setAgeHead(Math.max(18, Math.min(100, parseInt(e.target.value) || 18)))}
+              onChange={(e) => setAgeHead(parseInt(e.target.value) || 0)}
+              onBlur={() => setAgeHead(Math.max(18, Math.min(100, ageHead)))}
               min={18}
               max={100}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
@@ -197,7 +198,8 @@ function HouseholdImpactTab() {
               <input
                 type="number"
                 value={ageSpouse ?? 35}
-                onChange={(e) => setAgeSpouse(Math.max(18, Math.min(100, parseInt(e.target.value) || 18)))}
+                onChange={(e) => setAgeSpouse(parseInt(e.target.value) || 0)}
+                onBlur={() => setAgeSpouse(prev => prev !== null ? Math.max(18, Math.min(100, prev)) : null)}
                 min={18}
                 max={100}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
@@ -228,7 +230,12 @@ function HouseholdImpactTab() {
                     value={age}
                     onChange={(e) => {
                       const newAges = [...dependentAges];
-                      newAges[i] = Math.max(0, Math.min(26, parseInt(e.target.value) || 0));
+                      newAges[i] = parseInt(e.target.value) || 0;
+                      setDependentAges(newAges);
+                    }}
+                    onBlur={() => {
+                      const newAges = [...dependentAges];
+                      newAges[i] = Math.max(0, Math.min(26, newAges[i]));
                       setDependentAges(newAges);
                     }}
                     min={0}
