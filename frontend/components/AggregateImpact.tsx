@@ -87,7 +87,7 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-        <h3 className="text-red-800 font-semibold mb-2">Error Loading National Impact</h3>
+        <h3 className="text-red-800 font-semibold mb-2">Error loading national impact</h3>
         <p className="text-red-700 font-medium mb-2">{errorMessage}</p>
         <p className="text-sm text-gray-600 mt-4">
           Ensure precomputed data exists. Run: <code>python scripts/pipeline.py</code>
@@ -116,15 +116,15 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
 
   // Section tabs
   const sections = [
-    { key: 'fiscal' as const, label: 'Budgetary Impact' },
-    { key: 'distributional' as const, label: 'Distributional Impact' },
-    { key: 'winners' as const, label: 'Winners & Losers' },
-    { key: 'poverty' as const, label: 'Poverty Impact' },
+    { key: 'fiscal' as const, label: 'Budgetary impact' },
+    { key: 'distributional' as const, label: 'Distributional impact' },
+    { key: 'winners' as const, label: 'Winners & losers' },
+    { key: 'poverty' as const, label: 'Poverty impact' },
   ];
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-primary">National Impact Analysis</h2>
+      <h2 className="text-2xl font-bold text-primary">National impact analysis</h2>
 
       <p className="text-sm text-gray-500 bg-gray-50 rounded-lg px-4 py-3 border border-gray-200">
         These estimates are static: they do not capture behavioral responses such as changes in labor supply, tax avoidance, or migration.
@@ -176,7 +176,7 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
               ? 'bg-green-50 border-success'
               : 'bg-red-50 border-red-300'
           }`}>
-            <p className="text-sm text-gray-700 mb-2">Net Budgetary Impact ({selectedYear})</p>
+            <p className="text-sm text-gray-700 mb-2">Net budgetary impact ({selectedYear})</p>
             <p className={`text-4xl font-bold ${
               data.budget.budgetary_impact >= 0 ? 'text-green-600' : 'text-red-600'
             }`}>
@@ -192,7 +192,7 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
 
           {/* Tax revenue card */}
           <div className="bg-white rounded-lg p-6 border border-gray-200">
-            <p className="text-sm text-gray-600 mb-2">Tax Revenue Impact</p>
+            <p className="text-sm text-gray-600 mb-2">Tax revenue impact</p>
             <p className={`text-2xl font-bold ${data.budget.tax_revenue_impact >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {formatBillions(data.budget.tax_revenue_impact)}
             </p>
@@ -201,7 +201,7 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
 
           {/* Income bracket chart */}
           <div>
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Impact by Income Bracket</h3>
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Impact by income bracket</h3>
             <div className="bg-white border rounded-lg p-6">
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart data={data.by_income_bracket} margin={CHART_MARGIN}>
@@ -228,10 +228,10 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
                 <table className="min-w-full divide-y divide-gray-300">
                   <thead>
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Income Bracket</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Affected Households</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Total Impact</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Average Impact</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Income bracket</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Affected households</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Total impact</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Average impact</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -261,33 +261,12 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
       {activeSection === 'distributional' && (
         <div className="space-y-6">
           <p className="text-gray-700">
-            Average impact on household net income by income decile. Decile 1 is the lowest income, decile 10 is the highest.
+            Impact on household net income by income decile. Decile 1 is the lowest income, decile 10 is the highest.
           </p>
 
-          {/* Average absolute impact by decile */}
+          {/* Relative impact by decile (primary) */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Average Impact by Income Decile</h3>
-            <div className="bg-white border rounded-lg p-6">
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={Object.entries(data.decile.average).map(([k, v]) => ({ decile: k, value: v }))} margin={CHART_MARGIN}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                  <XAxis dataKey="decile" tick={TICK_STYLE} stroke="#A0AEC0" label={{ value: 'Income Decile', position: 'insideBottom', offset: -15, style: { ...TICK_STYLE, fill: '#718096' } }} />
-                  <YAxis tickFormatter={formatCurrencyWithSign} tick={TICK_STYLE} stroke="#A0AEC0" width={80} />
-                  <Tooltip content={<CustomTooltip formatter={(v) => formatCurrencyWithSign(v)} />} />
-                  <ReferenceLine y={0} stroke="#A0AEC0" strokeWidth={1} />
-                  <Bar dataKey="value" name="Average Impact" radius={[2, 2, 0, 0]}>
-                    {Object.values(data.decile.average).map((v, i) => (
-                      <Cell key={i} fill={v >= 0 ? COLORS.positive : COLORS.negative} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Relative impact by decile */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Relative Impact by Income Decile</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">Relative impact by income decile</h3>
             <div className="bg-white border rounded-lg p-6">
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart data={Object.entries(data.decile.relative).map(([k, v]) => ({ decile: k, value: v * 100 }))} margin={CHART_MARGIN}>
@@ -298,6 +277,27 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
                   <ReferenceLine y={0} stroke="#A0AEC0" strokeWidth={1} />
                   <Bar dataKey="value" name="Relative Impact (% of income)" radius={[2, 2, 0, 0]}>
                     {Object.values(data.decile.relative).map((v, i) => (
+                      <Cell key={i} fill={v >= 0 ? COLORS.positive : COLORS.negative} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Average absolute impact by decile (secondary) */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">Average impact by income decile</h3>
+            <div className="bg-white border rounded-lg p-6">
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={Object.entries(data.decile.average).map(([k, v]) => ({ decile: k, value: v }))} margin={CHART_MARGIN}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                  <XAxis dataKey="decile" tick={TICK_STYLE} stroke="#A0AEC0" label={{ value: 'Income Decile', position: 'insideBottom', offset: -15, style: { ...TICK_STYLE, fill: '#718096' } }} />
+                  <YAxis tickFormatter={formatCurrencyWithSign} tick={TICK_STYLE} stroke="#A0AEC0" width={80} />
+                  <Tooltip content={<CustomTooltip formatter={(v) => formatCurrencyWithSign(v)} />} />
+                  <ReferenceLine y={0} stroke="#A0AEC0" strokeWidth={1} />
+                  <Bar dataKey="value" name="Average Impact" radius={[2, 2, 0, 0]}>
+                    {Object.values(data.decile.average).map((v, i) => (
                       <Cell key={i} fill={v >= 0 ? COLORS.positive : COLORS.negative} />
                     ))}
                   </Bar>
@@ -355,7 +355,7 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
 
             {/* Stacked bar chart by decile */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">Winners & Losers by Income Decile</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Winners & losers by income decile</h3>
               <div className="bg-white border rounded-lg p-6">
                 <ResponsiveContainer width="100%" height={400}>
                   <BarChart data={stackedData} layout="vertical" stackOffset="expand" barSize={24} margin={CHART_MARGIN}>
@@ -444,7 +444,7 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
 
             {/* Bar chart: pp change */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">Change in Poverty Rates (pp)</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Change in poverty rates (pp)</h3>
               <div className="bg-white border rounded-lg p-6">
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={chartData} margin={CHART_MARGIN}>
