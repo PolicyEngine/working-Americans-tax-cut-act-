@@ -113,7 +113,3 @@ export interface AggregateImpactResponse {
   by_income_bracket: IncomeBracket[];
 }
 
-export interface HealthResponse {
-  status: string;
-  version: string;
-}
