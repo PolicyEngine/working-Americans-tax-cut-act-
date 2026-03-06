@@ -10,6 +10,7 @@ import {
   Legend,
   ResponsiveContainer,
   ReferenceLine,
+  ReferenceDot,
 } from 'recharts';
 import { useHouseholdImpact } from '@/hooks/useHouseholdImpact';
 import type { HouseholdRequest } from '@/lib/types';
@@ -134,6 +135,24 @@ export default function ImpactAnalysis({ request, triggered, maxEarnings }: Prop
               name="Change in Net Income"
               dot={false}
             />
+            {request && request.income <= xMax && (
+              <ReferenceDot
+                x={request.income}
+                y={benefitData.difference}
+                r={6}
+                fill="#319795"
+                stroke="#fff"
+                strokeWidth={2}
+                label={{
+                  value: `You: ${formatCurrency(benefitData.difference)}`,
+                  position: 'top',
+                  fill: '#374151',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  offset: 12,
+                }}
+              />
+            )}
           </LineChart>
         </ResponsiveContainer>
       </div>
