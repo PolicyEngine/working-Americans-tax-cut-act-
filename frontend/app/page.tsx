@@ -132,25 +132,38 @@ function HouseholdImpactTab() {
     <div className="space-y-6">
       {/* Inline household config */}
       <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Your household</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* AGI */}
+        <h3 className="text-lg font-semibold text-gray-900 mb-5">Your household</h3>
+
+        {/* Row 1: Income (full width, prominent) */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Adjusted gross income
+          </label>
+          <div className="relative max-w-xs">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+            <input
+              type="text"
+              value={formatNumber(income)}
+              onChange={(e) => setIncome(parseNumber(e.target.value))}
+              className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-lg"
+            />
+          </div>
+        </div>
+
+        {/* Row 2: Filing status + Ages */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Adjusted gross income
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-              <input
-                type="text"
-                value={formatNumber(income)}
-                onChange={(e) => setIncome(parseNumber(e.target.value))}
-                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              />
-            </div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Filing status</label>
+            <select
+              value={married ? 'married' : 'single'}
+              onChange={(e) => handleMarriedChange(e.target.value === 'married')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+            >
+              <option value="single">Single</option>
+              <option value="married">Married filing jointly</option>
+            </select>
           </div>
 
-          {/* Age */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Your age</label>
             <input
@@ -163,7 +176,20 @@ function HouseholdImpactTab() {
             />
           </div>
 
-          {/* State */}
+          {married && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Spouse age</label>
+              <input
+                type="number"
+                value={ageSpouse ?? 35}
+                onChange={(e) => setAgeSpouse(Math.max(18, Math.min(100, parseInt(e.target.value) || 18)))}
+                min={18}
+                max={100}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
             <select
@@ -176,50 +202,23 @@ function HouseholdImpactTab() {
               ))}
             </select>
           </div>
+        </div>
 
-          {/* Filing status */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Filing status</label>
-            <div className="flex items-center h-[42px]">
-              <input
-                type="checkbox"
-                id="married"
-                checked={married}
-                onChange={(e) => handleMarriedChange(e.target.checked)}
-                className="w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
-              />
-              <label htmlFor="married" className="ml-2 text-sm text-gray-700">
-                Married filing jointly
-              </label>
-            </div>
-            {married && (
-              <div className="mt-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Spouse age</label>
-                <input
-                  type="number"
-                  value={ageSpouse ?? 35}
-                  onChange={(e) => setAgeSpouse(Math.max(18, Math.min(100, parseInt(e.target.value) || 18)))}
-                  min={18}
-                  max={100}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Dependents */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Dependents</label>
+        {/* Row 3: Dependents */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Number of dependents</label>
+          <div className="flex items-center gap-4">
             <input
               type="number"
               value={dependentAges.length}
               onChange={(e) => handleDependentCountChange(Math.max(0, Math.min(10, parseInt(e.target.value) || 0)))}
               min={0}
               max={10}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
             {dependentAges.length > 0 && (
-              <div className="grid grid-cols-3 gap-1 mt-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm text-gray-500">Ages:</span>
                 {dependentAges.map((age, i) => (
                   <input
                     key={i}
@@ -232,8 +231,8 @@ function HouseholdImpactTab() {
                     }}
                     min={0}
                     max={26}
-                    className="px-2 py-1 border border-gray-300 rounded text-sm"
-                    placeholder={`Age ${i + 1}`}
+                    className="w-16 px-2 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    placeholder={`#${i + 1}`}
                   />
                 ))}
               </div>
@@ -241,32 +240,33 @@ function HouseholdImpactTab() {
           </div>
         </div>
 
-        {/* Surtax toggle */}
-        <div className="flex items-center space-x-3 mt-4 pt-4 border-t border-gray-200">
-          <button
-            onClick={() => setSurtaxEnabled(!surtaxEnabled)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              surtaxEnabled ? 'bg-primary-500' : 'bg-gray-300'
-            }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                surtaxEnabled ? 'translate-x-6' : 'translate-x-1'
+        {/* Surtax toggle + Calculate */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-gray-200">
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setSurtaxEnabled(!surtaxEnabled)}
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                surtaxEnabled ? 'bg-primary-500' : 'bg-gray-300'
               }`}
-            />
-          </button>
-          <span className="text-sm text-gray-700">
-            Include millionaire surtax (5-12% on AGI above $1M)
-          </span>
-        </div>
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  surtaxEnabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className="text-sm text-gray-700">
+              Include millionaire surtax (5-12% on AGI above $1M)
+            </span>
+          </div>
 
-        {/* Calculate button */}
-        <button
-          onClick={handleCalculate}
-          className="mt-4 w-full py-3 px-4 rounded-lg font-semibold text-white bg-primary-500 hover:bg-primary-600 transition-colors shadow-sm"
-        >
-          Calculate impact
-        </button>
+          <button
+            onClick={handleCalculate}
+            className="py-2.5 px-8 rounded-lg font-semibold text-white bg-primary-500 hover:bg-primary-600 transition-colors shadow-sm sm:w-auto w-full"
+          >
+            Calculate impact
+          </button>
+        </div>
       </div>
 
       {/* Chart x-axis options */}
