@@ -3,7 +3,8 @@ import parseCSV from "@/lib/parseCSV";
 import { AggregateImpactResponse, IntraDecileAll, IntraDecileDeciles } from "@/lib/types";
 
 async function fetchCSV(filename: string): Promise<Record<string, string | number>[]> {
-  const res = await fetch(`/data/${filename}`);
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+  const res = await fetch(`${basePath}/data/${filename}`);
   if (!res.ok) throw new Error(`Failed to load ${filename}`);
   const text = await res.text();
   return parseCSV(text);
