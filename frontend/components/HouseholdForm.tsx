@@ -321,7 +321,7 @@ export default function HouseholdForm({
               </p>
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {[200000, 500000, 1000000, 2000000].map((v) => (
+              {[200000, 500000, 1000000, 2000000, 5000000, 10000000].map((v) => (
                 <button
                   key={v}
                   onClick={() => setMaxEarnings(v)}

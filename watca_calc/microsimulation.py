@@ -51,10 +51,10 @@ def calculate_aggregate_impact(
 
     # Tax revenue components
     tax_revenue_baseline = sim_baseline.calculate(
-        "household_tax", period=year, map_to="household"
+        "income_tax", period=year, map_to="household"
     )
     tax_revenue_reform = sim_reform.calculate(
-        "household_tax", period=year, map_to="household"
+        "income_tax", period=year, map_to="household"
     )
     tax_revenue_impact = float((tax_revenue_reform - tax_revenue_baseline).sum())
 

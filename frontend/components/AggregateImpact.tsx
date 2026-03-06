@@ -415,9 +415,8 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
         ];
 
         const chartData = povertyMetrics.map((m) => {
-          const change = m.reform - m.baseline;
-          const pctChange = m.baseline !== 0 ? (change / m.baseline) * 100 : 0;
-          return { ...m, change, pctChange };
+          const ppChange = m.reform - m.baseline;
+          return { ...m, ppChange };
         });
 
         return (
@@ -429,21 +428,18 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
             {/* Metric cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {chartData.map((m, i) => {
-                const improved = m.change <= 0;
+                const improved = m.ppChange <= 0;
                 return (
                   <div key={i} className={`rounded-lg p-6 border ${
                     improved ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'
                   }`}>
                     <p className="text-sm text-gray-700 mb-2">{m.label}</p>
                     <p className={`text-3xl font-bold ${improved ? 'text-green-700' : 'text-red-700'}`}>
-                      {formatPct(m.pctChange)}
+                      {m.ppChange > 0 ? '+' : ''}{m.ppChange.toFixed(2)}pp
                     </p>
                     <div className="mt-3 pt-3 border-t border-gray-200 space-y-1">
                       <p className="text-xs text-gray-500">
                         Baseline: {m.baseline.toFixed(2)}% → Reform: {m.reform.toFixed(2)}%
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {m.change > 0 ? '+' : ''}{m.change.toFixed(2)} percentage points
                       </p>
                     </div>
                   </div>
@@ -451,20 +447,20 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
               })}
             </div>
 
-            {/* Bar chart: relative change */}
+            {/* Bar chart: pp change */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">Relative Change in Poverty Rates</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Change in Poverty Rates (pp)</h3>
               <div className="bg-white border rounded-lg p-6">
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={chartData} margin={CHART_MARGIN}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                     <XAxis dataKey="label" tick={TICK_STYLE} stroke="#A0AEC0" />
-                    <YAxis tickFormatter={(v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`} tick={TICK_STYLE} stroke="#A0AEC0" width={60} />
-                    <Tooltip content={<CustomTooltip formatter={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`} />} />
+                    <YAxis tickFormatter={(v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}pp`} tick={TICK_STYLE} stroke="#A0AEC0" width={70} />
+                    <Tooltip content={<CustomTooltip formatter={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}pp`} />} />
                     <ReferenceLine y={0} stroke="#A0AEC0" strokeWidth={1} />
-                    <Bar dataKey="pctChange" name="Relative Change" radius={[2, 2, 0, 0]}>
+                    <Bar dataKey="ppChange" name="Change (pp)" radius={[2, 2, 0, 0]}>
                       {chartData.map((m, i) => (
-                        <Cell key={i} fill={m.pctChange <= 0 ? COLORS.positive : '#EF4444'} />
+                        <Cell key={i} fill={m.ppChange <= 0 ? COLORS.positive : '#EF4444'} />
                       ))}
                     </Bar>
                   </BarChart>

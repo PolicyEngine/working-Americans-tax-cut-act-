@@ -48,7 +48,7 @@ export default function ImpactAnalysis({ request, triggered, maxEarnings }: Prop
   if (!data) return null;
 
   const formatCurrency = (value: number) =>
-    `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    `$${Math.round(value).toLocaleString('en-US')}`;
   const formatIncome = (value: number) => {
     if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
     return `$${(value / 1000).toFixed(0)}k`;
@@ -70,7 +70,7 @@ export default function ImpactAnalysis({ request, triggered, maxEarnings }: Prop
 
       {/* Your Personal Impact */}
       <div>
-        <h3 className="text-xl font-bold text-gray-800 mb-4">Your Personal Impact</h3>
+        <h3 className="text-xl font-bold text-gray-800 mb-4">Your Personal Impact ({request?.year ?? 2026})</h3>
         <p className="text-gray-600 mb-4">
           Based on your adjusted gross income of <strong>{formatCurrency(request?.income ?? 0)}</strong>
         </p>
@@ -106,7 +106,7 @@ export default function ImpactAnalysis({ request, triggered, maxEarnings }: Prop
       {/* Chart */}
       <div className="bg-white border rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-4 text-gray-800">
-          Change in Net Income from WATCA Reform by Adjusted Gross Income (2026)
+          Change in Net Income from WATCA Reform by Adjusted Gross Income ({request?.year ?? 2026})
         </h3>
         <ResponsiveContainer width="100%" height={400}>
           <LineChart data={chartData} margin={{ left: 20, right: 20, top: 5, bottom: 5 }}>
