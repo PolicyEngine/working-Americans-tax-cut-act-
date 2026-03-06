@@ -1,7 +1,6 @@
 import {
   HouseholdRequest,
   HouseholdImpactResponse,
-  AggregateImpactResponse,
   HealthResponse,
 } from "./types";
 
@@ -67,14 +66,6 @@ export const api = {
     request: HouseholdRequest
   ): Promise<HouseholdImpactResponse> {
     return post<HouseholdImpactResponse>("/household-impact", request);
-  },
-
-  async calculateAggregateImpact(
-    surtaxEnabled: boolean
-  ): Promise<AggregateImpactResponse> {
-    return post<AggregateImpactResponse>("/aggregate-impact", {
-      surtax_enabled: surtaxEnabled,
-    });
   },
 
   async health(): Promise<HealthResponse> {
