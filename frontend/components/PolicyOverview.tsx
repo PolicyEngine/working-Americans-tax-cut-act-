@@ -252,13 +252,13 @@ export default function PolicyOverview() {
                     x={baselineZero}
                     stroke="#9ca3af"
                     strokeDasharray="3 3"
-                    label={{ value: `Baseline zero-tax: ${formatDollarFull(baselineZero)}`, position: 'insideTopRight', fill: '#6b7280', fontSize: 11 }}
+                    label={{ value: `Baseline zero-tax: ${formatDollarFull(baselineZero)}`, position: 'right', fill: '#6b7280', fontSize: 11 }}
                   />
                   <ReferenceLine
                     x={watcaZero}
                     stroke={fs.color}
                     strokeDasharray="3 3"
-                    label={{ value: `WATCA zero-tax: ${formatDollarFull(watcaZero)}`, position: 'insideTopLeft', fill: fs.color, fontSize: 11 }}
+                    label={{ value: `WATCA zero-tax: ${formatDollarFull(watcaZero)}`, position: 'right', fill: fs.color, fontSize: 11 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
