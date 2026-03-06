@@ -56,7 +56,7 @@ function formatDollar(value: number): string {
 }
 
 function formatDollarFull(value: number): string {
-  return `$${value.toLocaleString()}`;
+  return `$${Math.round(value).toLocaleString()}`;
 }
 
 export default function PolicyOverview() {
