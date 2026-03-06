@@ -17,9 +17,10 @@ import type { HouseholdRequest } from '@/lib/types';
 interface Props {
   request: HouseholdRequest | null;
   triggered: boolean;
+  maxEarnings?: number;
 }
 
-export default function ImpactAnalysis({ request, triggered }: Props) {
+export default function ImpactAnalysis({ request, triggered, maxEarnings }: Props) {
   const { data, isLoading, error } = useHouseholdImpact(request, triggered);
 
   if (!triggered) return null;
@@ -55,12 +56,13 @@ export default function ImpactAnalysis({ request, triggered }: Props) {
 
   const benefitData = data.benefit_at_income;
 
+  const xMax = maxEarnings ?? data.x_axis_max;
   const chartData = data.income_range
     .map((inc, i) => ({
       income: inc,
       benefit: data.net_income_change[i],
     }))
-    .filter((d) => d.income <= data.x_axis_max);
+    .filter((d) => d.income <= xMax);
 
   return (
     <div className="space-y-8">
@@ -114,7 +116,7 @@ export default function ImpactAnalysis({ request, triggered }: Props) {
               type="number"
               tickFormatter={formatIncome}
               stroke="#666"
-              domain={[0, data.x_axis_max]}
+              domain={[0, xMax]}
               allowDataOverflow={false}
             />
             <YAxis tickFormatter={formatCurrency} stroke="#666" width={80} />

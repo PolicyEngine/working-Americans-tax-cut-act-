@@ -20,6 +20,9 @@ export default function Home() {
   // Reform state
   const [surtaxEnabled, setSurtaxEnabled] = useState(true);
 
+  // Chart display
+  const [maxEarnings, setMaxEarnings] = useState(500000);
+
   // Last calculated values
   const [calculatedAgeHead, setCalculatedAgeHead] = useState(35);
   const [calculatedAgeSpouse, setCalculatedAgeSpouse] = useState<number | null>(null);
@@ -92,6 +95,8 @@ export default function Home() {
               setIncome={setIncome}
               surtaxEnabled={surtaxEnabled}
               setSurtaxEnabled={setSurtaxEnabled}
+              maxEarnings={maxEarnings}
+              setMaxEarnings={setMaxEarnings}
               onCalculate={handleCalculate}
               calculationTriggered={calculationTriggered}
               hasChanges={hasChanges}
@@ -145,6 +150,7 @@ export default function Home() {
                     <ImpactAnalysis
                       request={calcRequest}
                       triggered={calculationTriggered}
+                      maxEarnings={maxEarnings}
                     />
                   ) : (
                     <AggregateImpact

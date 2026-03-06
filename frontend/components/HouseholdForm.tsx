@@ -15,6 +15,8 @@ interface Props {
   setIncome: (v: number) => void;
   surtaxEnabled: boolean;
   setSurtaxEnabled: (v: boolean) => void;
+  maxEarnings: number;
+  setMaxEarnings: (v: number) => void;
   onCalculate: () => void;
   calculationTriggered: boolean;
   hasChanges: boolean;
@@ -33,6 +35,8 @@ export default function HouseholdForm({
   setIncome,
   surtaxEnabled,
   setSurtaxEnabled,
+  maxEarnings,
+  setMaxEarnings,
   onCalculate,
   calculationTriggered,
   hasChanges,
@@ -286,6 +290,50 @@ export default function HouseholdForm({
                   }`}
                 />
               </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Step 3: Chart Options */}
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <StepHeader stepNumber={3} title="Chart Options" isExpanded={expandedStep === 3} />
+
+        {expandedStep === 3 && (
+          <div className="px-4 pb-4 pt-3 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Maximum Earnings (X-Axis)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                  $
+                </span>
+                <input
+                  type="text"
+                  value={formatNumber(maxEarnings)}
+                  onChange={(e) => setMaxEarnings(Math.max(10000, parseNumber(e.target.value)))}
+                  className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Sets the x-axis limit on the household impact chart
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {[200000, 500000, 1000000, 2000000].map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setMaxEarnings(v)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                    maxEarnings === v
+                      ? 'bg-primary-500 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  ${v >= 1000000 ? `${v / 1000000}M` : `${v / 1000}k`}
+                </button>
+              ))}
             </div>
           </div>
         )}
