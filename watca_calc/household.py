@@ -1,5 +1,14 @@
 """Build PolicyEngine household situations for WATCA calculations."""
 
+_GROUP_UNITS = ["families", "spm_units", "tax_units", "households"]
+
+
+def _add_member_to_units(situation, member_id):
+    """Append a member to all group units (families, spm, tax, households)."""
+    for unit in _GROUP_UNITS:
+        key = next(iter(situation[unit]))
+        situation[unit][key]["members"].append(member_id)
+
 
 def build_household_situation(
     age_head: int,
@@ -53,13 +62,13 @@ def build_household_situation(
         ]
 
     if age_spouse is not None:
-        situation["people"]["your partner"] = {"age": {year: age_spouse}}
-        for unit in ["families", "spm_units", "tax_units", "households"]:
-            key = list(situation[unit].keys())[0]
-            situation[unit][key]["members"].append("your partner")
-        situation["marital_units"]["your marital unit"]["members"].append(
-            "your partner"
-        )
+        situation["people"]["your partner"] = {
+            "age": {year: age_spouse}
+        }
+        _add_member_to_units(situation, "your partner")
+        situation["marital_units"]["your marital unit"][
+            "members"
+        ].append("your partner")
 
     for i, dep_age in enumerate(dependent_ages):
         if i == 0:
@@ -70,9 +79,7 @@ def build_household_situation(
             child_id = f"dependent_{i + 1}"
 
         situation["people"][child_id] = {"age": {year: dep_age}}
-        for unit in ["families", "spm_units", "tax_units", "households"]:
-            key = list(situation[unit].keys())[0]
-            situation[unit][key]["members"].append(child_id)
+        _add_member_to_units(situation, child_id)
         situation["marital_units"][f"{child_id}'s marital unit"] = {
             "members": [child_id]
         }
