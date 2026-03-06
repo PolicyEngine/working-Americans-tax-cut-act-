@@ -227,7 +227,22 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
           ? Object.values(data.decile.relative).map(v => v * 100)
           : Object.values(data.decile.average);
         const maxAbs = Math.max(...rawValues.map(Math.abs));
-        const symmetricDomain = [-maxAbs, maxAbs];
+        // Round up to a nice tick interval and generate symmetric ticks including 0
+        const niceStep = (() => {
+          const rough = maxAbs / 3;
+          const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+          const residual = rough / mag;
+          if (residual <= 1) return mag;
+          if (residual <= 2) return 2 * mag;
+          if (residual <= 5) return 5 * mag;
+          return 10 * mag;
+        })();
+        const niceMax = Math.ceil(maxAbs / niceStep) * niceStep;
+        const symmetricDomain = [-niceMax, niceMax];
+        const niceTicks = Array.from(
+          { length: Math.round(2 * niceMax / niceStep) + 1 },
+          (_, i) => -niceMax + i * niceStep,
+        );
         const chartData = isRelative
           ? Object.entries(data.decile.relative).map(([k, v]) => ({ decile: k, value: v * 100 }))
           : Object.entries(data.decile.average).map(([k, v]) => ({ decile: k, value: v }));
@@ -263,6 +278,7 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
                 <XAxis dataKey="decile" tick={TICK_STYLE} stroke="#A0AEC0" label={{ value: 'Income decile', position: 'insideBottom', offset: -15, style: { ...TICK_STYLE, fill: '#718096' } }} />
                 <YAxis
                   domain={symmetricDomain}
+                  ticks={niceTicks}
                   tickFormatter={isRelative
                     ? (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`
                     : formatCurrencyWithSign}
