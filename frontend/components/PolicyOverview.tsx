@@ -129,12 +129,12 @@ export default function PolicyOverview() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
-              <tr className="bg-gray-100">
-                <th className="text-left p-3 border">Filing status</th>
-                <th className="text-right p-3 border">Exemption</th>
-                <th className="text-right p-3 border">Phase-out ends</th>
-                <th className="text-right p-3 border">Standard deduction</th>
-                <th className="text-right p-3 border">Zero-tax threshold</th>
+              <tr className="bg-primary-50">
+                <th className="text-left p-3 border border-primary-100 text-primary-800">Filing status</th>
+                <th className="text-right p-3 border border-primary-100 text-primary-800">Exemption</th>
+                <th className="text-right p-3 border border-primary-100 text-primary-800">Phase-out ends</th>
+                <th className="text-right p-3 border border-primary-100 text-primary-800">Standard deduction</th>
+                <th className="text-right p-3 border border-primary-100 text-primary-800">Zero-tax threshold</th>
               </tr>
             </thead>
             <tbody>
@@ -274,12 +274,12 @@ export default function PolicyOverview() {
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <h4 className="font-medium text-gray-700 mb-2">Single / HOH / Separate</h4>
+            <h4 className="font-medium text-primary-700 mb-2">Single / HOH / Separate</h4>
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="bg-gray-100">
-                  <th className="text-left p-2 border">AGI threshold</th>
-                  <th className="text-right p-2 border">Marginal rate</th>
+                <tr className="bg-primary-50">
+                  <th className="text-left p-2 border border-primary-100 text-primary-800">AGI threshold</th>
+                  <th className="text-right p-2 border border-primary-100 text-primary-800">Marginal rate</th>
                 </tr>
               </thead>
               <tbody>
@@ -293,12 +293,12 @@ export default function PolicyOverview() {
             </table>
           </div>
           <div>
-            <h4 className="font-medium text-gray-700 mb-2">Married filing jointly / Surviving spouse</h4>
+            <h4 className="font-medium text-primary-700 mb-2">Married filing jointly / Surviving spouse</h4>
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="bg-gray-100">
-                  <th className="text-left p-2 border">AGI threshold</th>
-                  <th className="text-right p-2 border">Marginal rate</th>
+                <tr className="bg-primary-50">
+                  <th className="text-left p-2 border border-primary-100 text-primary-800">AGI threshold</th>
+                  <th className="text-right p-2 border border-primary-100 text-primary-800">Marginal rate</th>
                 </tr>
               </thead>
               <tbody>
