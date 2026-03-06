@@ -56,12 +56,12 @@ def calculate_aggregate_impact(
     )
     income_change = net_income_reform - net_income_baseline
 
-    # Tax revenue: API uses household_tax for US
+    # Use income_tax (federal only) since WATCA is a federal reform
     tax_revenue_baseline = sim_baseline.calculate(
-        "household_tax", period=year, map_to="household"
+        "income_tax", period=year, map_to="household"
     )
     tax_revenue_reform = sim_reform.calculate(
-        "household_tax", period=year, map_to="household"
+        "income_tax", period=year, map_to="household"
     )
     tax_revenue_impact = float((tax_revenue_reform - tax_revenue_baseline).sum())
 
