@@ -91,6 +91,7 @@ function HouseholdImpactTab() {
   const [stateCode, setStateCode] = useState('CA');
   const [maxEarnings, setMaxEarnings] = useState(500000);
   const [triggered, setTriggered] = useState(false);
+  const [submittedRequest, setSubmittedRequest] = useState<HouseholdRequest | null>(null);
 
   const handleMarriedChange = (value: boolean) => {
     setMarried(value);
@@ -111,7 +112,7 @@ function HouseholdImpactTab() {
     return isNaN(num) ? 0 : num;
   };
 
-  const request: HouseholdRequest = {
+  const buildRequest = (): HouseholdRequest => ({
     age_head: ageHead,
     age_spouse: married ? ageSpouse : null,
     dependent_ages: dependentAges,
@@ -120,19 +121,19 @@ function HouseholdImpactTab() {
     max_earnings: maxEarnings,
     state_code: stateCode,
     reform_params: { surtax_enabled: surtaxEnabled },
-  };
+  });
 
-  // Auto-calculate on mount
-  useEffect(() => {
+  const handleCalculate = () => {
+    setSubmittedRequest(buildRequest());
     setTriggered(true);
-  }, []);
+  };
 
   return (
     <div className="space-y-6">
       {/* Inline household config */}
       <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Your household</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* AGI */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -143,11 +144,8 @@ function HouseholdImpactTab() {
               <input
                 type="text"
                 value={formatNumber(income)}
-                onChange={(e) => {
-                  setIncome(parseNumber(e.target.value));
-                  setTriggered(true);
-                }}
-                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
+                onChange={(e) => setIncome(parseNumber(e.target.value))}
+                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
           </div>
@@ -158,47 +156,54 @@ function HouseholdImpactTab() {
             <input
               type="number"
               value={ageHead}
-              onChange={(e) => {
-                setAgeHead(Math.max(18, Math.min(100, parseInt(e.target.value) || 18)));
-                setTriggered(true);
-              }}
+              onChange={(e) => setAgeHead(Math.max(18, Math.min(100, parseInt(e.target.value) || 18)))}
               min={18}
               max={100}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
 
-          {/* Married + spouse age */}
+          {/* State */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+            <select
+              value={stateCode}
+              onChange={(e) => setStateCode(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+            >
+              {US_STATES.map((s) => (
+                <option key={s.code} value={s.code}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Filing status */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Filing status</label>
-            <div className="flex items-center space-x-2 py-2">
+            <div className="flex items-center h-[42px]">
               <input
                 type="checkbox"
                 id="married"
                 checked={married}
-                onChange={(e) => {
-                  handleMarriedChange(e.target.checked);
-                  setTriggered(true);
-                }}
-                className="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded"
+                onChange={(e) => handleMarriedChange(e.target.checked)}
+                className="w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
               />
-              <label htmlFor="married" className="text-sm text-gray-700">
+              <label htmlFor="married" className="ml-2 text-sm text-gray-700">
                 Married filing jointly
               </label>
             </div>
             {married && (
-              <input
-                type="number"
-                value={ageSpouse ?? 35}
-                onChange={(e) => {
-                  setAgeSpouse(Math.max(18, Math.min(100, parseInt(e.target.value) || 18)));
-                  setTriggered(true);
-                }}
-                min={18}
-                max={100}
-                placeholder="Spouse age"
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-              />
+              <div className="mt-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Spouse age</label>
+                <input
+                  type="number"
+                  value={ageSpouse ?? 35}
+                  onChange={(e) => setAgeSpouse(Math.max(18, Math.min(100, parseInt(e.target.value) || 18)))}
+                  min={18}
+                  max={100}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
             )}
           </div>
 
@@ -208,13 +213,10 @@ function HouseholdImpactTab() {
             <input
               type="number"
               value={dependentAges.length}
-              onChange={(e) => {
-                handleDependentCountChange(Math.max(0, Math.min(10, parseInt(e.target.value) || 0)));
-                setTriggered(true);
-              }}
+              onChange={(e) => handleDependentCountChange(Math.max(0, Math.min(10, parseInt(e.target.value) || 0)))}
               min={0}
               max={10}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
             {dependentAges.length > 0 && (
               <div className="grid grid-cols-3 gap-1 mt-2">
@@ -227,7 +229,6 @@ function HouseholdImpactTab() {
                       const newAges = [...dependentAges];
                       newAges[i] = Math.max(0, Math.min(26, parseInt(e.target.value) || 0));
                       setDependentAges(newAges);
-                      setTriggered(true);
                     }}
                     min={0}
                     max={26}
@@ -238,32 +239,12 @@ function HouseholdImpactTab() {
               </div>
             )}
           </div>
-
-          {/* State */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
-            <select
-              value={stateCode}
-              onChange={(e) => {
-                setStateCode(e.target.value);
-                setTriggered(true);
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
-            >
-              {US_STATES.map((s) => (
-                <option key={s.code} value={s.code}>{s.name}</option>
-              ))}
-            </select>
-          </div>
         </div>
 
-        {/* Surtax toggle — inline */}
+        {/* Surtax toggle */}
         <div className="flex items-center space-x-3 mt-4 pt-4 border-t border-gray-200">
           <button
-            onClick={() => {
-              setSurtaxEnabled(!surtaxEnabled);
-              setTriggered(true);
-            }}
+            onClick={() => setSurtaxEnabled(!surtaxEnabled)}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
               surtaxEnabled ? 'bg-primary-500' : 'bg-gray-300'
             }`}
@@ -275,31 +256,44 @@ function HouseholdImpactTab() {
             />
           </button>
           <span className="text-sm text-gray-700">
-            Include millionaire surtax (5–12% on AGI above $1M)
+            Include millionaire surtax (5-12% on AGI above $1M)
           </span>
         </div>
+
+        {/* Calculate button */}
+        <button
+          onClick={handleCalculate}
+          className="mt-4 w-full py-3 px-4 rounded-lg font-semibold text-white bg-primary-500 hover:bg-primary-600 transition-colors shadow-sm"
+        >
+          Calculate impact
+        </button>
       </div>
 
       {/* Chart x-axis options */}
-      <div className="flex items-center gap-2 text-sm text-gray-600">
-        <span>Chart x-axis max:</span>
-        {[200000, 500000, 1000000, 2000000, 5000000, 10000000].map((v) => (
-          <button
-            key={v}
-            onClick={() => setMaxEarnings(v)}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-              maxEarnings === v
-                ? 'bg-primary-500 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            ${v >= 1000000 ? `${v / 1000000}M` : `${v / 1000}k`}
-          </button>
-        ))}
-      </div>
+      {triggered && (
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <span>Chart x-axis max:</span>
+          {[200000, 500000, 1000000, 2000000, 5000000, 10000000].map((v) => (
+            <button
+              key={v}
+              onClick={() => {
+                setMaxEarnings(v);
+                setSubmittedRequest(prev => prev ? { ...prev, max_earnings: v } : null);
+              }}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                maxEarnings === v
+                  ? 'bg-primary-500 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              ${v >= 1000000 ? `${v / 1000000}M` : `${v / 1000}k`}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Impact results */}
-      <ImpactAnalysis request={request} triggered={triggered} maxEarnings={maxEarnings} />
+      <ImpactAnalysis request={submittedRequest} triggered={triggered} maxEarnings={maxEarnings} />
     </div>
   );
 }
