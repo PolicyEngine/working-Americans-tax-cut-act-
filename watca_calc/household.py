@@ -8,6 +8,7 @@ def build_household_situation(
     year: int = 2026,
     with_axes: bool = False,
     max_earnings: int = 2_000_000,
+    state_code: str = "CA",
 ) -> dict:
     """
     Build a PolicyEngine household situation dict.
@@ -30,7 +31,10 @@ def build_household_situation(
         "spm_units": {"your household": {"members": ["you"]}},
         "tax_units": {"your tax unit": {"members": ["you"]}},
         "households": {
-            "your household": {"members": ["you"]}
+            "your household": {
+                "members": ["you"],
+                "state_code": {year: state_code},
+            }
         },
     }
 

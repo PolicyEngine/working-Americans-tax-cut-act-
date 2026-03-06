@@ -73,4 +73,7 @@ async def aggregate_impact(request: AggregateImpactRequest):
             },
         },
     }
+    # Ensure budget has baseline_net_income (removed in federal-only refactor)
+    if "budget" in data and "baseline_net_income" not in data["budget"]:
+        data["budget"]["baseline_net_income"] = 0.0
     return AggregateImpactResponse(**data)

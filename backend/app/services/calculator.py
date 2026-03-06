@@ -21,6 +21,7 @@ async def calculate_household_impact(
     surtax_enabled: bool = True,
     year: int = 2026,
     max_earnings: int = 2_000_000,
+    state_code: str = "CA",
 ) -> dict:
     """
     Calculate WATCA impact across income range for a household.
@@ -34,6 +35,7 @@ async def calculate_household_impact(
         year=year,
         with_axes=True,
         max_earnings=max_earnings,
+        state_code=state_code,
     )
 
     reform = create_watca_reform(surtax_enabled=surtax_enabled, year=year)

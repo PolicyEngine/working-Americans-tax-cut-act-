@@ -25,7 +25,7 @@ class IncomeBracket(BaseModel):
 
 
 class BudgetImpact(BaseModel):
-    baseline_net_income: float
+    baseline_net_income: float = 0.0
     budgetary_impact: float
     tax_revenue_impact: float
     benefit_spending_impact: float

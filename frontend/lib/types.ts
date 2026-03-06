@@ -9,6 +9,7 @@ export interface HouseholdRequest {
   income: number;
   year: number;
   max_earnings: number;
+  state_code: string;
   reform_params: ReformParams;
 }
 

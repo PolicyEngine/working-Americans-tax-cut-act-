@@ -1,9 +1,11 @@
 """Aggregate impact calculations using enhanced CPS microsimulation.
 
-Methodology matches the PolicyEngine API v2 calculate_economy_comparison:
-- Budget: household_tax and household_benefits weighted sums
-- Decile: uses household_income_decile variable, groupby sum/count for average,
-  sum/sum for relative
+Uses federal income_tax only (not household_net_income) to isolate WATCA's
+federal impact from indirect state tax effects caused by states inheriting
+federal taxable_income.
+
+- Budget: federal income_tax change only
+- Decile: income_tax change per decile; relative uses baseline net income denominator
 - Intra-decile: % change floored at max(baseline, 1), ±0.1% no-change band,
   person-weighted via household_count_people
 - Poverty: person-level weighted mean of in_poverty boolean
@@ -97,7 +99,11 @@ def calculate_aggregate_impact(
         "household_income_decile", period=year, map_to="household"
     ))
     weight_arr = np.array(household_weight)
-    baseline_arr = np.array(net_income_baseline)
+    # For decile relative % and intra-decile, use baseline net income as denominator
+    baseline_net_income = sim_baseline.calculate(
+        "household_net_income", period=year, map_to="household"
+    )
+    baseline_arr = np.array(baseline_net_income)
 
     # People per household (for intra-decile, matches API)
     people_arr = np.array(sim_baseline.calculate(
@@ -226,10 +232,9 @@ def calculate_aggregate_impact(
 
     return {
         "budget": {
-            "baseline_net_income": baseline_net_income,
             "budgetary_impact": budgetary_impact,
             "tax_revenue_impact": tax_revenue_impact,
-            "benefit_spending_impact": benefit_spending_impact,
+            "benefit_spending_impact": 0.0,
             "households": float(total_households),
         },
         "decile": {
