@@ -1,0 +1,177 @@
+"""Data generation pipeline for WATCA calculator dashboard.
+
+Runs microsimulation for both reform variants (with/without surtax)
+across multiple years and saves output to frontend/public/data/ as CSV files.
+
+Usage:
+    python scripts/pipeline.py
+"""
+
+import os
+import sys
+
+import numpy as np
+import pandas as pd
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from watca_calc.microsimulation import calculate_aggregate_impact
+
+# Default output directory — Next.js serves files from public/
+DEFAULT_OUTPUT_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "frontend",
+    "public",
+    "data",
+)
+
+YEARS = list(range(2026, 2036))
+
+
+def _save_csv(df: pd.DataFrame, path: str) -> None:
+    """Save DataFrame to CSV, creating parent directories if needed."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    df.to_csv(path, index=False)
+    print(f"Saved: {path}")
+
+
+def _extract_distributional(result: dict, variant: str, year: int) -> list[dict]:
+    """Extract distributional impact rows from aggregate result."""
+    rows = []
+    for decile, avg in result["decile"]["average"].items():
+        rows.append({
+            "year": year,
+            "variant": variant,
+            "decile": decile,
+            "average_change": round(avg, 2),
+            "relative_change": round(result["decile"]["relative"][decile], 6),
+        })
+    return rows
+
+
+def _extract_metrics(result: dict, variant: str, year: int) -> list[dict]:
+    """Extract flat metrics into rows."""
+    metrics = [
+        ("budgetary_impact", result["budget"]["budgetary_impact"]),
+        ("tax_revenue_impact", result["budget"]["tax_revenue_impact"]),
+        ("benefit_spending_impact", result["budget"]["benefit_spending_impact"]),
+        ("baseline_net_income", result["budget"]["baseline_net_income"]),
+        ("households", result["budget"]["households"]),
+        ("total_cost", result["total_cost"]),
+        ("beneficiaries", result["beneficiaries"]),
+        ("avg_benefit", result["avg_benefit"]),
+        ("winners", result["winners"]),
+        ("losers", result["losers"]),
+        ("winners_rate", result["winners_rate"]),
+        ("losers_rate", result["losers_rate"]),
+        ("poverty_baseline_rate", result["poverty_baseline_rate"]),
+        ("poverty_reform_rate", result["poverty_reform_rate"]),
+        ("poverty_rate_change", result["poverty_rate_change"]),
+        ("poverty_percent_change", result["poverty_percent_change"]),
+        ("child_poverty_baseline_rate", result["child_poverty_baseline_rate"]),
+        ("child_poverty_reform_rate", result["child_poverty_reform_rate"]),
+        ("child_poverty_rate_change", result["child_poverty_rate_change"]),
+        ("child_poverty_percent_change", result["child_poverty_percent_change"]),
+        ("deep_poverty_baseline_rate", result["deep_poverty_baseline_rate"]),
+        ("deep_poverty_reform_rate", result["deep_poverty_reform_rate"]),
+        ("deep_poverty_rate_change", result["deep_poverty_rate_change"]),
+        ("deep_poverty_percent_change", result["deep_poverty_percent_change"]),
+        ("deep_child_poverty_baseline_rate", result["deep_child_poverty_baseline_rate"]),
+        ("deep_child_poverty_reform_rate", result["deep_child_poverty_reform_rate"]),
+        ("deep_child_poverty_rate_change", result["deep_child_poverty_rate_change"]),
+        ("deep_child_poverty_percent_change", result["deep_child_poverty_percent_change"]),
+    ]
+    return [{"year": year, "variant": variant, "metric": k, "value": v} for k, v in metrics]
+
+
+def _extract_winners_losers(result: dict, variant: str, year: int) -> list[dict]:
+    """Extract intra-decile winners/losers data."""
+    intra = result["intra_decile"]
+    rows = []
+
+    # "All" row
+    rows.append({
+        "year": year,
+        "variant": variant,
+        "decile": "All",
+        "gain_more_5pct": intra["all"]["Gain more than 5%"],
+        "gain_less_5pct": intra["all"]["Gain less than 5%"],
+        "no_change": intra["all"]["No change"],
+        "lose_less_5pct": intra["all"]["Lose less than 5%"],
+        "lose_more_5pct": intra["all"]["Lose more than 5%"],
+    })
+
+    # Per-decile rows
+    for i in range(10):
+        rows.append({
+            "year": year,
+            "variant": variant,
+            "decile": str(i + 1),
+            "gain_more_5pct": intra["deciles"]["Gain more than 5%"][i],
+            "gain_less_5pct": intra["deciles"]["Gain less than 5%"][i],
+            "no_change": intra["deciles"]["No change"][i],
+            "lose_less_5pct": intra["deciles"]["Lose less than 5%"][i],
+            "lose_more_5pct": intra["deciles"]["Lose more than 5%"][i],
+        })
+
+    return rows
+
+
+def _extract_income_brackets(result: dict, variant: str, year: int) -> list[dict]:
+    """Extract income bracket breakdown."""
+    return [
+        {
+            "year": year,
+            "variant": variant,
+            "bracket": b["bracket"],
+            "beneficiaries": b["beneficiaries"],
+            "total_cost": b["total_cost"],
+            "avg_benefit": b["avg_benefit"],
+        }
+        for b in result["by_income_bracket"]
+    ]
+
+
+def generate_all_data(output_dir: str = None) -> dict[str, pd.DataFrame]:
+    """Generate all dashboard data as CSVs for all years and variants."""
+    output_dir = output_dir or DEFAULT_OUTPUT_DIR
+
+    all_distributional = []
+    all_metrics = []
+    all_winners_losers = []
+    all_income_brackets = []
+
+    total_runs = len(YEARS) * 2
+    run_count = 0
+
+    for year in YEARS:
+        for surtax_enabled, variant in [(True, "with_surtax"), (False, "without_surtax")]:
+            run_count += 1
+            print(f"\n[{run_count}/{total_runs}] Computing aggregate impact ({variant}, {year})...")
+            result = calculate_aggregate_impact(
+                surtax_enabled=surtax_enabled, year=year
+            )
+
+            all_distributional.extend(_extract_distributional(result, variant, year))
+            all_metrics.extend(_extract_metrics(result, variant, year))
+            all_winners_losers.extend(_extract_winners_losers(result, variant, year))
+            all_income_brackets.extend(_extract_income_brackets(result, variant, year))
+
+            print(f"  Done: {variant} {year}")
+
+    results = {
+        "distributional_impact": pd.DataFrame(all_distributional),
+        "metrics": pd.DataFrame(all_metrics),
+        "winners_losers": pd.DataFrame(all_winners_losers),
+        "income_brackets": pd.DataFrame(all_income_brackets),
+    }
+
+    for name, df in results.items():
+        _save_csv(df, os.path.join(output_dir, f"{name}.csv"))
+
+    print(f"\nAll data saved to {output_dir}/")
+    return results
+
+
+if __name__ == "__main__":
+    generate_all_data()

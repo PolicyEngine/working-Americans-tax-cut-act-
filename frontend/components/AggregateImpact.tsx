@@ -12,8 +12,53 @@ import {
   ResponsiveContainer,
   ReferenceLine,
   Cell,
-  Legend,
 } from 'recharts';
+
+// App-v2 color tokens
+const COLORS = {
+  gainMore5: '#285E61',    // primary-700
+  gainLess5: '#31979599',  // primary-500 @ 60%
+  noChange: '#E2E8F0',     // gray-200
+  loseLess5: '#9CA3AF',    // gray-400
+  loseMore5: '#4B5563',    // gray-600
+  positive: '#319795',     // primary-500
+  negative: '#4B5563',     // gray-600
+};
+
+const YEARS = Array.from({ length: 10 }, (_, i) => 2026 + i);
+
+// Shared chart margins
+const CHART_MARGIN = { top: 20, right: 20, bottom: 30, left: 60 };
+
+// Shared axis tick style
+const TICK_STYLE = { fontFamily: 'Inter, sans-serif', fontSize: 12 };
+
+// Custom tooltip component
+function CustomTooltip({ active, payload, label, formatter }: {
+  active?: boolean;
+  payload?: { name: string; value: number; color?: string }[];
+  label?: string;
+  formatter?: (value: number, name: string) => string;
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{
+      background: '#fff',
+      border: '1px solid #E2E8F0',
+      borderRadius: 4,
+      padding: '8px 12px',
+      fontFamily: 'Inter, sans-serif',
+      fontSize: 12,
+    }}>
+      {label && <p style={{ margin: '0 0 4px', fontWeight: 600, color: '#1A202C' }}>{label}</p>}
+      {payload.map((entry, i) => (
+        <p key={i} style={{ margin: 0, color: entry.color || '#4A5568' }}>
+          {entry.name}: {formatter ? formatter(entry.value, entry.name) : entry.value}
+        </p>
+      ))}
+    </div>
+  );
+}
 
 interface Props {
   surtaxEnabled: boolean;
@@ -21,7 +66,8 @@ interface Props {
 }
 
 export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
-  const { data, isLoading, error } = useAggregateImpact(surtaxEnabled, triggered);
+  const [selectedYear, setSelectedYear] = useState(2026);
+  const { data, isLoading, error } = useAggregateImpact(surtaxEnabled, triggered, selectedYear);
   const [activeSection, setActiveSection] = useState<'fiscal' | 'distributional' | 'winners' | 'poverty'>('fiscal');
 
   if (!triggered) return null;
@@ -44,7 +90,7 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
         <h3 className="text-red-800 font-semibold mb-2">Error Loading National Impact</h3>
         <p className="text-red-700 font-medium mb-2">{errorMessage}</p>
         <p className="text-sm text-gray-600 mt-4">
-          Ensure precomputed data exists. Run: <code>python scripts/precompute.py</code>
+          Ensure precomputed data exists. Run: <code>python scripts/pipeline.py</code>
         </p>
       </div>
     );
@@ -80,6 +126,26 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-primary">National Impact Analysis</h2>
 
+      {/* Year selector */}
+      <div>
+        <p className="text-sm text-gray-500 mb-2">Select year</p>
+        <div className="flex flex-wrap gap-1.5">
+          {YEARS.map((year) => (
+            <button
+              key={year}
+              onClick={() => setSelectedYear(year)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                selectedYear === year
+                  ? 'bg-primary-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {year}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Sub-navigation */}
       <div className="flex flex-wrap gap-2">
         {sections.map((s) => (
@@ -106,7 +172,7 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
               ? 'bg-green-50 border-success'
               : 'bg-red-50 border-red-300'
           }`}>
-            <p className="text-sm text-gray-700 mb-2">Net Budgetary Impact</p>
+            <p className="text-sm text-gray-700 mb-2">Net Budgetary Impact ({selectedYear})</p>
             <p className={`text-4xl font-bold ${
               data.budget.budgetary_impact >= 0 ? 'text-green-600' : 'text-red-600'
             }`}>
@@ -143,15 +209,15 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
             <h3 className="text-xl font-bold text-gray-800 mb-4">Impact by Income Bracket</h3>
             <div className="bg-white border rounded-lg p-6">
               <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={data.by_income_bracket}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                  <XAxis dataKey="bracket" stroke="#666" />
-                  <YAxis tickFormatter={formatCurrencyWithSign} stroke="#666" width={80} />
-                  <Tooltip formatter={(value: number) => formatCurrencyWithSign(value)} />
-                  <ReferenceLine y={0} stroke="#666" strokeWidth={2} />
-                  <Bar dataKey="avg_benefit" name="Average Impact">
+                <BarChart data={data.by_income_bracket} margin={CHART_MARGIN}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                  <XAxis dataKey="bracket" tick={TICK_STYLE} stroke="#A0AEC0" />
+                  <YAxis tickFormatter={formatCurrencyWithSign} tick={TICK_STYLE} stroke="#A0AEC0" width={80} />
+                  <Tooltip content={<CustomTooltip formatter={(v) => formatCurrencyWithSign(v)} />} />
+                  <ReferenceLine y={0} stroke="#A0AEC0" strokeWidth={1} />
+                  <Bar dataKey="avg_benefit" name="Average Impact" radius={[2, 2, 0, 0]}>
                     {data.by_income_bracket.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.avg_benefit >= 0 ? '#319795' : '#64748B'} />
+                      <Cell key={`cell-${index}`} fill={entry.avg_benefit >= 0 ? COLORS.positive : COLORS.negative} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -178,12 +244,12 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
                       <tr key={index} className="hover:bg-gray-100">
                         <td className="px-4 py-3 text-sm text-gray-900">{bracket.bracket}</td>
                         <td className="px-4 py-3 text-sm text-gray-900">{Math.round(bracket.beneficiaries).toLocaleString()}</td>
-                        <td className={`px-4 py-3 text-sm font-semibold ${bracket.total_cost >= 0 ? 'text-green-600' : ''}`}
-                          style={bracket.total_cost < 0 ? { color: '#64748B' } : {}}>
+                        <td className="px-4 py-3 text-sm font-semibold"
+                          style={{ color: bracket.total_cost >= 0 ? COLORS.positive : COLORS.negative }}>
                           {formatBillions(bracket.total_cost)}
                         </td>
-                        <td className={`px-4 py-3 text-sm font-semibold ${bracket.avg_benefit >= 0 ? 'text-green-600' : ''}`}
-                          style={bracket.avg_benefit < 0 ? { color: '#64748B' } : {}}>
+                        <td className="px-4 py-3 text-sm font-semibold"
+                          style={{ color: bracket.avg_benefit >= 0 ? COLORS.positive : COLORS.negative }}>
                           {formatCurrencyWithSign(bracket.avg_benefit)}
                         </td>
                       </tr>
@@ -208,15 +274,15 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
             <h3 className="text-lg font-semibold text-gray-800 mb-3">Average Impact by Income Decile</h3>
             <div className="bg-white border rounded-lg p-6">
               <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={Object.entries(data.decile.average).map(([k, v]) => ({ decile: k, value: v }))}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                  <XAxis dataKey="decile" stroke="#666" label={{ value: 'Income Decile', position: 'insideBottom', offset: -5 }} />
-                  <YAxis tickFormatter={formatCurrencyWithSign} stroke="#666" width={80} />
-                  <Tooltip formatter={(value: number) => [formatCurrencyWithSign(value), 'Average Impact']} />
-                  <ReferenceLine y={0} stroke="#666" strokeWidth={2} />
-                  <Bar dataKey="value" name="Average Impact">
+                <BarChart data={Object.entries(data.decile.average).map(([k, v]) => ({ decile: k, value: v }))} margin={CHART_MARGIN}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                  <XAxis dataKey="decile" tick={TICK_STYLE} stroke="#A0AEC0" label={{ value: 'Income Decile', position: 'insideBottom', offset: -15, style: { ...TICK_STYLE, fill: '#718096' } }} />
+                  <YAxis tickFormatter={formatCurrencyWithSign} tick={TICK_STYLE} stroke="#A0AEC0" width={80} />
+                  <Tooltip content={<CustomTooltip formatter={(v) => formatCurrencyWithSign(v)} />} />
+                  <ReferenceLine y={0} stroke="#A0AEC0" strokeWidth={1} />
+                  <Bar dataKey="value" name="Average Impact" radius={[2, 2, 0, 0]}>
                     {Object.values(data.decile.average).map((v, i) => (
-                      <Cell key={i} fill={v >= 0 ? '#319795' : '#64748B'} />
+                      <Cell key={i} fill={v >= 0 ? COLORS.positive : COLORS.negative} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -229,15 +295,15 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
             <h3 className="text-lg font-semibold text-gray-800 mb-3">Relative Impact by Income Decile</h3>
             <div className="bg-white border rounded-lg p-6">
               <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={Object.entries(data.decile.relative).map(([k, v]) => ({ decile: k, value: v * 100 }))}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                  <XAxis dataKey="decile" stroke="#666" label={{ value: 'Income Decile', position: 'insideBottom', offset: -5 }} />
-                  <YAxis tickFormatter={(v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`} stroke="#666" width={60} />
-                  <Tooltip formatter={(value: number) => [`${value >= 0 ? '+' : ''}${value.toFixed(2)}%`, 'Relative Impact']} />
-                  <ReferenceLine y={0} stroke="#666" strokeWidth={2} />
-                  <Bar dataKey="value" name="Relative Impact (% of income)">
+                <BarChart data={Object.entries(data.decile.relative).map(([k, v]) => ({ decile: k, value: v * 100 }))} margin={CHART_MARGIN}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                  <XAxis dataKey="decile" tick={TICK_STYLE} stroke="#A0AEC0" label={{ value: 'Income Decile', position: 'insideBottom', offset: -15, style: { ...TICK_STYLE, fill: '#718096' } }} />
+                  <YAxis tickFormatter={(v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`} tick={TICK_STYLE} stroke="#A0AEC0" width={60} />
+                  <Tooltip content={<CustomTooltip formatter={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`} />} />
+                  <ReferenceLine y={0} stroke="#A0AEC0" strokeWidth={1} />
+                  <Bar dataKey="value" name="Relative Impact (% of income)" radius={[2, 2, 0, 0]}>
                     {Object.values(data.decile.relative).map((v, i) => (
-                      <Cell key={i} fill={v >= 0 ? '#319795' : '#64748B'} />
+                      <Cell key={i} fill={v >= 0 ? COLORS.positive : COLORS.negative} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -251,11 +317,11 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
       {activeSection === 'winners' && (() => {
         const intra = data.intra_decile;
         const categories = [
-          { key: 'gain_more_than_5pct', label: 'Gain more than 5%', color: '#15803d' },
-          { key: 'gain_less_than_5pct', label: 'Gain less than 5%', color: '#86efac' },
-          { key: 'no_change', label: 'No change', color: '#e5e7eb' },
-          { key: 'lose_less_than_5pct', label: 'Lose less than 5%', color: '#fca5a5' },
-          { key: 'lose_more_than_5pct', label: 'Lose more than 5%', color: '#b91c1c' },
+          { key: 'gain_more_than_5pct', label: 'Gain more than 5%', color: COLORS.gainMore5 },
+          { key: 'gain_less_than_5pct', label: 'Gain less than 5%', color: COLORS.gainLess5 },
+          { key: 'no_change', label: 'No change', color: COLORS.noChange },
+          { key: 'lose_less_than_5pct', label: 'Lose less than 5%', color: COLORS.loseLess5 },
+          { key: 'lose_more_than_5pct', label: 'Lose more than 5%', color: COLORS.loseMore5 },
         ] as const;
 
         // Build stacked data: "All" row + 10 decile rows
@@ -274,9 +340,9 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
           <div className="space-y-6">
             {/* Headline */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-green-50 rounded-lg p-6 border border-success">
+              <div className="rounded-lg p-6 border" style={{ backgroundColor: '#F0FDFA', borderColor: COLORS.positive }}>
                 <p className="text-sm text-gray-700 mb-2">Winners</p>
-                <p className="text-3xl font-bold text-green-600">{data.winners_rate.toFixed(1)}%</p>
+                <p className="text-3xl font-bold" style={{ color: COLORS.gainMore5 }}>{data.winners_rate.toFixed(1)}%</p>
                 <p className="text-xs text-gray-600 mt-1">{Math.round(data.winners).toLocaleString()} households gain</p>
               </div>
               <div className="bg-gray-50 rounded-lg p-6 border border-gray-300">
@@ -285,9 +351,9 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
                   {(100 - data.winners_rate - data.losers_rate).toFixed(1)}%
                 </p>
               </div>
-              <div className="bg-red-50 rounded-lg p-6 border border-red-300">
+              <div className="rounded-lg p-6 border" style={{ backgroundColor: '#F9FAFB', borderColor: COLORS.loseMore5 }}>
                 <p className="text-sm text-gray-700 mb-2">Losers</p>
-                <p className="text-3xl font-bold text-red-600">{data.losers_rate.toFixed(1)}%</p>
+                <p className="text-3xl font-bold" style={{ color: COLORS.loseMore5 }}>{data.losers_rate.toFixed(1)}%</p>
                 <p className="text-xs text-gray-600 mt-1">{Math.round(data.losers).toLocaleString()} households lose</p>
               </div>
             </div>
@@ -297,17 +363,25 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
               <h3 className="text-lg font-semibold text-gray-800 mb-3">Winners & Losers by Income Decile</h3>
               <div className="bg-white border rounded-lg p-6">
                 <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={stackedData} layout="vertical" stackOffset="expand" barSize={24}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                    <XAxis type="number" tickFormatter={(v: number) => `${(v * 100).toFixed(0)}%`} stroke="#666" />
-                    <YAxis type="category" dataKey="label" stroke="#666" width={40} />
-                    <Tooltip formatter={(value: number) => `${value.toFixed(1)}%`} />
-                    <Legend />
+                  <BarChart data={stackedData} layout="vertical" stackOffset="expand" barSize={24} margin={CHART_MARGIN}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                    <XAxis type="number" tickFormatter={(v: number) => `${(v * 100).toFixed(0)}%`} tick={TICK_STYLE} stroke="#A0AEC0" />
+                    <YAxis type="category" dataKey="label" tick={TICK_STYLE} stroke="#A0AEC0" width={40} />
+                    <Tooltip content={<CustomTooltip formatter={(v) => `${v.toFixed(1)}%`} />} />
                     {categories.map((c) => (
                       <Bar key={c.key} dataKey={c.key} stackId="a" fill={c.color} name={c.label} />
                     ))}
                   </BarChart>
                 </ResponsiveContainer>
+                {/* Custom legend */}
+                <div className="flex flex-wrap justify-center gap-4 mt-4">
+                  {categories.map((c) => (
+                    <div key={c.key} className="flex items-center gap-1.5">
+                      <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: c.color }} />
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#4A5568' }}>{c.label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -382,15 +456,15 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
               <h3 className="text-lg font-semibold text-gray-800 mb-3">Relative Change in Poverty Rates</h3>
               <div className="bg-white border rounded-lg p-6">
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                    <XAxis dataKey="label" stroke="#666" />
-                    <YAxis tickFormatter={(v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`} stroke="#666" width={60} />
-                    <Tooltip formatter={(value: number) => [`${value >= 0 ? '+' : ''}${value.toFixed(2)}%`, 'Relative Change']} />
-                    <ReferenceLine y={0} stroke="#666" strokeWidth={2} />
-                    <Bar dataKey="pctChange" name="Relative Change">
+                  <BarChart data={chartData} margin={CHART_MARGIN}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                    <XAxis dataKey="label" tick={TICK_STYLE} stroke="#A0AEC0" />
+                    <YAxis tickFormatter={(v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`} tick={TICK_STYLE} stroke="#A0AEC0" width={60} />
+                    <Tooltip content={<CustomTooltip formatter={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`} />} />
+                    <ReferenceLine y={0} stroke="#A0AEC0" strokeWidth={1} />
+                    <Bar dataKey="pctChange" name="Relative Change" radius={[2, 2, 0, 0]}>
                       {chartData.map((m, i) => (
-                        <Cell key={i} fill={m.pctChange <= 0 ? '#319795' : '#EF4444'} />
+                        <Cell key={i} fill={m.pctChange <= 0 ? COLORS.positive : '#EF4444'} />
                       ))}
                     </Bar>
                   </BarChart>
