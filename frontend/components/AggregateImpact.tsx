@@ -287,16 +287,19 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
           { key: 'lose_more_than_5pct', label: 'Lose more than 5%', color: COLORS.loseMore5 },
         ] as const;
 
-        // Build stacked data: "All" row + 10 decile rows
+        // Build stacked data: "All" on top, then deciles 10 down to 1
         const stackedData = [
           {
             label: 'All',
             ...Object.fromEntries(categories.map(c => [c.key, (intra.all[c.key] * 100)])),
           },
-          ...Array.from({ length: 10 }, (_, i) => ({
-            label: `${i + 1}`,
-            ...Object.fromEntries(categories.map(c => [c.key, (intra.deciles[c.key][i] * 100)])),
-          })),
+          ...Array.from({ length: 10 }, (_, i) => {
+            const d = 10 - i;
+            return {
+            label: `${d}`,
+            ...Object.fromEntries(categories.map(c => [c.key, (intra.deciles[c.key][d - 1] * 100)])),
+          };
+          }),
         ];
 
         return (
