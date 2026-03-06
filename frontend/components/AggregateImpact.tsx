@@ -387,33 +387,6 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
 
         return (
           <div className="space-y-6">
-            <p className="text-gray-700">
-              Impact on poverty rates, measured as the share of people below the poverty line.
-            </p>
-
-            {/* Metric cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {chartData.map((m, i) => {
-                const improved = m.ppChange <= 0;
-                return (
-                  <div key={i} className={`rounded-lg p-6 border ${
-                    improved ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'
-                  }`}>
-                    <p className="text-sm text-gray-700 mb-2">{m.label}</p>
-                    <p className={`text-3xl font-bold ${improved ? 'text-green-700' : 'text-red-700'}`}>
-                      {m.ppChange > 0 ? '+' : ''}{m.ppChange.toFixed(2)}pp
-                    </p>
-                    <div className="mt-3 pt-3 border-t border-gray-200 space-y-1">
-                      <p className="text-xs text-gray-500">
-                        Baseline: {m.baseline.toFixed(2)}% → Reform: {m.reform.toFixed(2)}%
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Bar chart: pp change */}
             <div>
               <h3 className="text-lg font-semibold text-gray-800 mb-3">Change in poverty rates (pp)</h3>
               <div className="bg-white border rounded-lg p-6">
