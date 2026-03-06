@@ -110,7 +110,7 @@ export default function ImpactAnalysis({ request, triggered, maxEarnings }: Prop
           Change in Net Income from WATCA Reform by Adjusted Gross Income ({request?.year ?? 2026})
         </h3>
         <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={chartData} margin={{ left: 20, right: 20, top: 5, bottom: 5 }}>
+          <LineChart data={chartData} margin={{ left: 30, right: 20, top: 5, bottom: 25 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
             <XAxis
               dataKey="income"
@@ -119,8 +119,14 @@ export default function ImpactAnalysis({ request, triggered, maxEarnings }: Prop
               stroke="#666"
               domain={[0, xMax]}
               allowDataOverflow={false}
+              label={{ value: 'Adjusted Gross Income', position: 'bottom', offset: 5, style: { fill: '#666', fontSize: 12 } }}
             />
-            <YAxis tickFormatter={formatCurrency} stroke="#666" width={80} />
+            <YAxis
+              tickFormatter={formatCurrency}
+              stroke="#666"
+              width={80}
+              label={{ value: 'Change in Net Income', angle: -90, position: 'left', offset: 0, style: { fill: '#666', fontSize: 12, textAnchor: 'middle' } }}
+            />
             <Tooltip
               formatter={(value: number) => formatCurrency(value)}
               labelFormatter={(value: number) => `Adjusted Gross Income: ${formatCurrency(value)}`}
