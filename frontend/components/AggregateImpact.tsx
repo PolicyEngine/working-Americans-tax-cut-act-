@@ -190,69 +190,37 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
             </p>
           </div>
 
-          {/* Tax revenue card */}
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
-            <p className="text-sm text-gray-600 mb-2">Tax revenue impact</p>
-            <p className={`text-2xl font-bold ${data.budget.tax_revenue_impact >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatBillions(data.budget.tax_revenue_impact)}
-            </p>
-            <p className="text-xs text-gray-500 mt-1">Change in federal tax revenue</p>
-          </div>
-
-          {/* Income bracket chart */}
+          {/* Income bracket table */}
           <div>
             <h3 className="text-xl font-bold text-gray-800 mb-4">Impact by income bracket</h3>
-            <div className="bg-white border rounded-lg p-6">
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={data.by_income_bracket} margin={CHART_MARGIN}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                  <XAxis dataKey="bracket" tick={TICK_STYLE} stroke="#A0AEC0" />
-                  <YAxis tickFormatter={formatCurrencyWithSign} tick={TICK_STYLE} stroke="#A0AEC0" width={80} />
-                  <Tooltip content={<CustomTooltip formatter={(v) => formatCurrencyWithSign(v)} />} />
-                  <ReferenceLine y={0} stroke="#A0AEC0" strokeWidth={1} />
-                  <Bar dataKey="avg_benefit" name="Average Impact" radius={[2, 2, 0, 0]}>
-                    {data.by_income_bracket.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.avg_benefit >= 0 ? COLORS.positive : COLORS.negative} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Detailed table */}
-            <details className="mt-4 bg-gray-50 rounded-lg p-4">
-              <summary className="cursor-pointer font-semibold text-gray-700 hover:text-primary">
-                View detailed breakdown
-              </summary>
-              <div className="mt-4 overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-300">
-                  <thead>
-                    <tr>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Income bracket</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Affected households</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Total impact</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Average impact</th>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-300">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Income bracket</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">Affected households</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">Total impact</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">Average impact</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {data.by_income_bracket.map((bracket, index) => (
+                    <tr key={index} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm text-gray-900">{bracket.bracket}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 text-right">{Math.round(bracket.beneficiaries).toLocaleString()}</td>
+                      <td className="px-4 py-3 text-sm font-semibold text-right"
+                        style={{ color: bracket.total_cost >= 0 ? COLORS.positive : COLORS.negative }}>
+                        {formatBillions(bracket.total_cost)}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-semibold text-right"
+                        style={{ color: bracket.avg_benefit >= 0 ? COLORS.positive : COLORS.negative }}>
+                        {formatCurrencyWithSign(bracket.avg_benefit)}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {data.by_income_bracket.map((bracket, index) => (
-                      <tr key={index} className="hover:bg-gray-100">
-                        <td className="px-4 py-3 text-sm text-gray-900">{bracket.bracket}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900">{Math.round(bracket.beneficiaries).toLocaleString()}</td>
-                        <td className="px-4 py-3 text-sm font-semibold"
-                          style={{ color: bracket.total_cost >= 0 ? COLORS.positive : COLORS.negative }}>
-                          {formatBillions(bracket.total_cost)}
-                        </td>
-                        <td className="px-4 py-3 text-sm font-semibold"
-                          style={{ color: bracket.avg_benefit >= 0 ? COLORS.positive : COLORS.negative }}>
-                          {formatCurrencyWithSign(bracket.avg_benefit)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </details>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
