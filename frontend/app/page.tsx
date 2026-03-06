@@ -265,7 +265,7 @@ function HouseholdImpactTab() {
               />
             </button>
             <span className="text-sm text-gray-700">
-              Include millionaire surtax (5-12% on AGI above $1M)
+              Include millionaire surtax
             </span>
           </div>
 
@@ -328,7 +328,7 @@ function NationalImpactTab() {
           />
         </button>
         <span className="text-sm text-gray-700">
-          Include millionaire surtax (5–12% marginal surtax on AGI above $1M/$1.5M)
+          Include millionaire surtax
         </span>
       </div>
 

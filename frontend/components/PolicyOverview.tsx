@@ -16,9 +16,9 @@ import {
 } from 'recharts';
 
 const FILING_STATUSES = [
-  { key: 'single', label: 'Single', exemption: 46_000, stdDed: 16_100, color: '#2563eb' },
-  { key: 'hoh', label: 'Head of household', exemption: 64_400, stdDed: 24_150, color: '#059669' },
-  { key: 'joint', label: 'Married filing jointly', exemption: 92_000, stdDed: 32_200, color: '#7c3aed' },
+  { key: 'single', label: 'Single', exemption: 46_000, stdDed: 16_100, color: '#319795' },
+  { key: 'hoh', label: 'Head of household', exemption: 64_400, stdDed: 24_150, color: '#285E61' },
+  { key: 'joint', label: 'Married filing jointly', exemption: 92_000, stdDed: 32_200, color: '#1D4044' },
 ];
 
 const PHASE_OUT_MULTIPLE = 1.75;
@@ -73,18 +73,23 @@ export default function PolicyOverview() {
     return points;
   }, []);
 
-  const taxableIncomeData = useMemo(() => {
-    const points = [];
-    for (let agi = 0; agi <= 180_000; agi += 1_000) {
-      const point: Record<string, number> = { agi };
-      for (const fs of FILING_STATUSES) {
-        point[`${fs.key}_watca`] = calcTaxableIncome(agi, fs.exemption, fs.stdDed);
-        point[`${fs.key}_baseline`] = Math.max(0, agi - fs.stdDed);
+  const allTaxableIncomeData = useMemo(() => {
+    const byStatus: Record<string, Record<string, number>[]> = {};
+    for (const fs of FILING_STATUSES) {
+      const points = [];
+      for (let agi = 0; agi <= 180_000; agi += 1_000) {
+        points.push({
+          agi,
+          watca: calcTaxableIncome(agi, fs.exemption, fs.stdDed),
+          baseline: Math.max(0, agi - fs.stdDed),
+        });
       }
-      points.push(point);
+      byStatus[fs.key] = points;
     }
-    return points;
+    return byStatus;
   }, []);
+
+  const taxableIncomeData = allTaxableIncomeData[FILING_STATUSES[selectedFs].key];
 
   const zeroTaxThresholds = FILING_STATUSES.map((fs) => {
     const poRate = fs.exemption / (fs.exemption * 0.75);
@@ -129,12 +134,12 @@ export default function PolicyOverview() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
-              <tr className="bg-gray-100">
-                <th className="text-left p-3 border">Filing status</th>
-                <th className="text-right p-3 border">Exemption</th>
-                <th className="text-right p-3 border">Phase-out ends</th>
-                <th className="text-right p-3 border">Standard deduction</th>
-                <th className="text-right p-3 border">Zero-tax threshold</th>
+              <tr className="bg-primary-50">
+                <th className="text-left p-3 border border-primary-100 text-primary-800">Filing status</th>
+                <th className="text-right p-3 border border-primary-100 text-primary-800">Exemption</th>
+                <th className="text-right p-3 border border-primary-100 text-primary-800">Phase-out ends</th>
+                <th className="text-right p-3 border border-primary-100 text-primary-800">Standard deduction</th>
+                <th className="text-right p-3 border border-primary-100 text-primary-800">Zero-tax threshold</th>
               </tr>
             </thead>
             <tbody>
@@ -192,80 +197,75 @@ export default function PolicyOverview() {
       </div>
 
       {/* Taxable income comparison — tabbed by filing status */}
-      {(() => {
-        const fs = FILING_STATUSES[selectedFs];
-        const baselineZero = fs.stdDed;
-        const watcaZero = zeroTaxThresholds[selectedFs].threshold;
-        return (
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
-              Taxable income: baseline vs. WATCA
-            </h3>
-            <div className="flex gap-1 mb-3">
-              {FILING_STATUSES.map((f, i) => (
-                <button
-                  key={f.key}
-                  onClick={() => setSelectedFs(i)}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                    selectedFs === i
-                      ? 'text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                  style={selectedFs === i ? { backgroundColor: f.color } : undefined}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={taxableIncomeData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="agi" tickFormatter={formatDollar} type="number" allowDecimals={false} />
-                  <YAxis tickFormatter={formatDollar} allowDecimals={false} />
-                  <Tooltip
-                    formatter={(value: number) => formatDollarFull(value)}
-                    labelFormatter={(label: number) => `AGI: ${formatDollarFull(label)}`}
-                  />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey={`${fs.key}_baseline`}
-                    name="Baseline"
-                    stroke="#9ca3af"
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    dot={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey={`${fs.key}_watca`}
-                    name="Under WATCA"
-                    stroke={fs.color}
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                  <ReferenceLine
-                    x={baselineZero}
-                    stroke="#9ca3af"
-                    strokeDasharray="3 3"
-                    label={{ value: `Baseline zero-tax: ${formatDollarFull(baselineZero)}`, position: 'right', fill: '#6b7280', fontSize: 11 }}
-                  />
-                  <ReferenceLine
-                    x={watcaZero}
-                    stroke={fs.color}
-                    strokeDasharray="3 3"
-                    label={{ value: `WATCA zero-tax: ${formatDollarFull(watcaZero)}`, position: 'right', fill: fs.color, fontSize: 11 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        );
-      })()}
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-3">
+          Taxable income: baseline vs. WATCA
+        </h3>
+        <div className="flex gap-1 mb-3">
+          {FILING_STATUSES.map((f, i) => (
+            <button
+              key={f.key}
+              onClick={() => setSelectedFs(i)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                selectedFs === i
+                  ? 'text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+              style={selectedFs === i ? { backgroundColor: f.color } : undefined}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={taxableIncomeData}
+              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="agi" tickFormatter={formatDollar} type="number" allowDecimals={false} />
+              <YAxis tickFormatter={formatDollar} allowDecimals={false} />
+              <Tooltip
+                formatter={(value: number) => formatDollarFull(value)}
+                labelFormatter={(label: number) => `AGI: ${formatDollarFull(label)}`}
+              />
+              <Legend />
+              <Line
+                type="monotone"
+                dataKey="baseline"
+                name="Baseline"
+                stroke="#9ca3af"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                dot={false}
+                animationDuration={500}
+              />
+              <Line
+                type="monotone"
+                dataKey="watca"
+                name="Under WATCA"
+                stroke={FILING_STATUSES[selectedFs].color}
+                strokeWidth={2}
+                dot={false}
+                animationDuration={500}
+              />
+              <ReferenceLine
+                x={FILING_STATUSES[selectedFs].stdDed}
+                stroke="#9ca3af"
+                strokeDasharray="3 3"
+                label={{ value: `Baseline zero-tax: ${formatDollarFull(FILING_STATUSES[selectedFs].stdDed)}`, position: 'right', fill: '#6b7280', fontSize: 11 }}
+              />
+              <ReferenceLine
+                x={zeroTaxThresholds[selectedFs].threshold}
+                stroke={FILING_STATUSES[selectedFs].color}
+                strokeDasharray="3 3"
+                label={{ value: `WATCA zero-tax: ${formatDollarFull(zeroTaxThresholds[selectedFs].threshold)}`, position: 'right', fill: FILING_STATUSES[selectedFs].color, fontSize: 11 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
 
       {/* Surtax brackets */}
       <div>
@@ -274,12 +274,12 @@ export default function PolicyOverview() {
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <h4 className="font-medium text-gray-700 mb-2">Single / HOH / Separate</h4>
+            <h4 className="font-medium text-primary-700 mb-2">Single / HOH / Separate</h4>
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="bg-gray-100">
-                  <th className="text-left p-2 border">AGI threshold</th>
-                  <th className="text-right p-2 border">Marginal rate</th>
+                <tr className="bg-primary-50">
+                  <th className="text-left p-2 border border-primary-100 text-primary-800">AGI threshold</th>
+                  <th className="text-right p-2 border border-primary-100 text-primary-800">Marginal rate</th>
                 </tr>
               </thead>
               <tbody>
@@ -293,12 +293,12 @@ export default function PolicyOverview() {
             </table>
           </div>
           <div>
-            <h4 className="font-medium text-gray-700 mb-2">Married filing jointly / Surviving spouse</h4>
+            <h4 className="font-medium text-primary-700 mb-2">Married filing jointly / Surviving spouse</h4>
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="bg-gray-100">
-                  <th className="text-left p-2 border">AGI threshold</th>
-                  <th className="text-right p-2 border">Marginal rate</th>
+                <tr className="bg-primary-50">
+                  <th className="text-left p-2 border border-primary-100 text-primary-800">AGI threshold</th>
+                  <th className="text-right p-2 border border-primary-100 text-primary-800">Marginal rate</th>
                 </tr>
               </thead>
               <tbody>
