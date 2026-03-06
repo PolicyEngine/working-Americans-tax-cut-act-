@@ -56,7 +56,7 @@ function formatDollar(value: number): string {
 }
 
 function formatDollarFull(value: number): string {
-  return `$${value.toLocaleString()}`;
+  return `$${Math.round(value).toLocaleString()}`;
 }
 
 export default function PolicyOverview() {
@@ -104,16 +104,16 @@ export default function PolicyOverview() {
           has two main provisions:
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <h3 className="font-semibold text-green-800 mb-2">Cost-of-living exemption</h3>
-            <p className="text-sm text-green-700">
+          <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+            <h3 className="font-semibold text-primary-800 mb-2">Cost-of-living exemption</h3>
+            <p className="text-sm text-primary-700">
               A new exemption from taxable income that phases out between the exemption
               amount and 175% of the exemption amount, varying by filing status.
             </p>
           </div>
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <h3 className="font-semibold text-red-800 mb-2">Millionaire surtax</h3>
-            <p className="text-sm text-red-700">
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <h3 className="font-semibold text-gray-800 mb-2">Millionaire surtax</h3>
+            <p className="text-sm text-gray-700">
               A marginal surtax on AGI above $1M (single) or $1.5M (joint), with
               rates of 5%, 10%, and 12% at higher thresholds.
             </p>
@@ -252,13 +252,13 @@ export default function PolicyOverview() {
                     x={baselineZero}
                     stroke="#9ca3af"
                     strokeDasharray="3 3"
-                    label={{ value: `Baseline zero-tax: ${formatDollarFull(baselineZero)}`, position: 'insideTopRight', fill: '#6b7280', fontSize: 11 }}
+                    label={{ value: `Baseline zero-tax: ${formatDollarFull(baselineZero)}`, position: 'right', fill: '#6b7280', fontSize: 11 }}
                   />
                   <ReferenceLine
                     x={watcaZero}
                     stroke={fs.color}
                     strokeDasharray="3 3"
-                    label={{ value: `WATCA zero-tax: ${formatDollarFull(watcaZero)}`, position: 'insideTopLeft', fill: fs.color, fontSize: 11 }}
+                    label={{ value: `WATCA zero-tax: ${formatDollarFull(watcaZero)}`, position: 'right', fill: fs.color, fontSize: 11 }}
                   />
                 </LineChart>
               </ResponsiveContainer>

@@ -91,6 +91,7 @@ function HouseholdImpactTab() {
   const [stateCode, setStateCode] = useState('CA');
   const [maxEarnings, setMaxEarnings] = useState(500000);
   const [triggered, setTriggered] = useState(false);
+  const [submittedRequest, setSubmittedRequest] = useState<HouseholdRequest | null>(null);
 
   const handleMarriedChange = (value: boolean) => {
     setMarried(value);
@@ -111,7 +112,7 @@ function HouseholdImpactTab() {
     return isNaN(num) ? 0 : num;
   };
 
-  const request: HouseholdRequest = {
+  const buildRequest = (): HouseholdRequest => ({
     age_head: ageHead,
     age_spouse: married ? ageSpouse : null,
     dependent_ages: dependentAges,
@@ -120,20 +121,21 @@ function HouseholdImpactTab() {
     max_earnings: maxEarnings,
     state_code: stateCode,
     reform_params: { surtax_enabled: surtaxEnabled },
-  };
+  });
 
-  // Auto-calculate on mount
-  useEffect(() => {
+  const handleCalculate = () => {
+    setSubmittedRequest(buildRequest());
     setTriggered(true);
-  }, []);
+  };
 
   return (
     <div className="space-y-6">
       {/* Inline household config */}
       <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Your household</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          {/* AGI */}
+        <h3 className="text-lg font-semibold text-gray-900 mb-5">Your household</h3>
+
+        {/* Row 1: Income + State */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Adjusted gross income
@@ -143,112 +145,18 @@ function HouseholdImpactTab() {
               <input
                 type="text"
                 value={formatNumber(income)}
-                onChange={(e) => {
-                  setIncome(parseNumber(e.target.value));
-                  setTriggered(true);
-                }}
-                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
+                onChange={(e) => setIncome(parseNumber(e.target.value))}
+                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-lg"
               />
             </div>
           </div>
 
-          {/* Age */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Your age</label>
-            <input
-              type="number"
-              value={ageHead}
-              onChange={(e) => {
-                setAgeHead(Math.max(18, Math.min(100, parseInt(e.target.value) || 18)));
-                setTriggered(true);
-              }}
-              min={18}
-              max={100}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-          </div>
-
-          {/* Married + spouse age */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Filing status</label>
-            <div className="flex items-center space-x-2 py-2">
-              <input
-                type="checkbox"
-                id="married"
-                checked={married}
-                onChange={(e) => {
-                  handleMarriedChange(e.target.checked);
-                  setTriggered(true);
-                }}
-                className="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded"
-              />
-              <label htmlFor="married" className="text-sm text-gray-700">
-                Married filing jointly
-              </label>
-            </div>
-            {married && (
-              <input
-                type="number"
-                value={ageSpouse ?? 35}
-                onChange={(e) => {
-                  setAgeSpouse(Math.max(18, Math.min(100, parseInt(e.target.value) || 18)));
-                  setTriggered(true);
-                }}
-                min={18}
-                max={100}
-                placeholder="Spouse age"
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-              />
-            )}
-          </div>
-
-          {/* Dependents */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Dependents</label>
-            <input
-              type="number"
-              value={dependentAges.length}
-              onChange={(e) => {
-                handleDependentCountChange(Math.max(0, Math.min(10, parseInt(e.target.value) || 0)));
-                setTriggered(true);
-              }}
-              min={0}
-              max={10}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-            {dependentAges.length > 0 && (
-              <div className="grid grid-cols-3 gap-1 mt-2">
-                {dependentAges.map((age, i) => (
-                  <input
-                    key={i}
-                    type="number"
-                    value={age}
-                    onChange={(e) => {
-                      const newAges = [...dependentAges];
-                      newAges[i] = Math.max(0, Math.min(26, parseInt(e.target.value) || 0));
-                      setDependentAges(newAges);
-                      setTriggered(true);
-                    }}
-                    min={0}
-                    max={26}
-                    className="px-2 py-1 border border-gray-300 rounded text-sm"
-                    placeholder={`Age ${i + 1}`}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* State */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
             <select
               value={stateCode}
-              onChange={(e) => {
-                setStateCode(e.target.value);
-                setTriggered(true);
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
+              onChange={(e) => setStateCode(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%236b7280%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.23%207.21a.75.75%200%20011.06.02L10%2011.168l3.71-3.938a.75.75%200%20111.08%201.04l-4.25%204.5a.75.75%200%2001-1.08%200l-4.25-4.5a.75.75%200%2001.02-1.06z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-8"
             >
               {US_STATES.map((s) => (
                 <option key={s.code} value={s.code}>{s.name}</option>
@@ -257,49 +165,144 @@ function HouseholdImpactTab() {
           </div>
         </div>
 
-        {/* Surtax toggle — inline */}
-        <div className="flex items-center space-x-3 mt-4 pt-4 border-t border-gray-200">
-          <button
-            onClick={() => {
-              setSurtaxEnabled(!surtaxEnabled);
-              setTriggered(true);
-            }}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              surtaxEnabled ? 'bg-primary-500' : 'bg-gray-300'
-            }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                surtaxEnabled ? 'translate-x-6' : 'translate-x-1'
-              }`}
+        {/* Row 2: Filing status + Ages */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Filing status</label>
+            <select
+              value={married ? 'married' : 'single'}
+              onChange={(e) => handleMarriedChange(e.target.value === 'married')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%236b7280%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.23%207.21a.75.75%200%20011.06.02L10%2011.168l3.71-3.938a.75.75%200%20111.08%201.04l-4.25%204.5a.75.75%200%2001-1.08%200l-4.25-4.5a.75.75%200%2001.02-1.06z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-8"
+            >
+              <option value="single">Single</option>
+              <option value="married">Married filing jointly</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Your age</label>
+            <input
+              type="number"
+              value={ageHead}
+              onChange={(e) => setAgeHead(parseInt(e.target.value) || 0)}
+              onBlur={() => setAgeHead(Math.max(18, Math.min(100, ageHead)))}
+              min={18}
+              max={100}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
+          </div>
+
+          {married && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Spouse age</label>
+              <input
+                type="number"
+                value={ageSpouse ?? 35}
+                onChange={(e) => setAgeSpouse(parseInt(e.target.value) || 0)}
+                onBlur={() => setAgeSpouse(prev => prev !== null ? Math.max(18, Math.min(100, prev)) : null)}
+                min={18}
+                max={100}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Row 3: Dependents */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Number of dependents</label>
+          <div className="flex items-center gap-4">
+            <input
+              type="number"
+              value={dependentAges.length}
+              onChange={(e) => handleDependentCountChange(Math.max(0, Math.min(10, parseInt(e.target.value) || 0)))}
+              min={0}
+              max={10}
+              className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            />
+            {dependentAges.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm text-gray-500">Ages:</span>
+                {dependentAges.map((age, i) => (
+                  <input
+                    key={i}
+                    type="number"
+                    value={age}
+                    onChange={(e) => {
+                      const newAges = [...dependentAges];
+                      newAges[i] = parseInt(e.target.value) || 0;
+                      setDependentAges(newAges);
+                    }}
+                    onBlur={() => {
+                      const newAges = [...dependentAges];
+                      newAges[i] = Math.max(0, Math.min(26, newAges[i]));
+                      setDependentAges(newAges);
+                    }}
+                    min={0}
+                    max={26}
+                    className="w-16 px-2 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    placeholder={`#${i + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Surtax toggle + Calculate */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-gray-200">
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setSurtaxEnabled(!surtaxEnabled)}
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                surtaxEnabled ? 'bg-primary-500' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  surtaxEnabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className="text-sm text-gray-700">
+              Include millionaire surtax (5-12% on AGI above $1M)
+            </span>
+          </div>
+
+          <button
+            onClick={handleCalculate}
+            className="py-2.5 px-8 rounded-lg font-semibold text-white bg-primary-500 hover:bg-primary-600 transition-colors shadow-sm sm:w-auto w-full"
+          >
+            Calculate impact
           </button>
-          <span className="text-sm text-gray-700">
-            Include millionaire surtax (5–12% on AGI above $1M)
-          </span>
         </div>
       </div>
 
       {/* Chart x-axis options */}
-      <div className="flex items-center gap-2 text-sm text-gray-600">
-        <span>Chart x-axis max:</span>
-        {[200000, 500000, 1000000, 2000000, 5000000, 10000000].map((v) => (
-          <button
-            key={v}
-            onClick={() => setMaxEarnings(v)}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-              maxEarnings === v
-                ? 'bg-primary-500 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            ${v >= 1000000 ? `${v / 1000000}M` : `${v / 1000}k`}
-          </button>
-        ))}
-      </div>
+      {triggered && (
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <span>Chart x-axis max:</span>
+          {[200000, 500000, 1000000, 2000000, 5000000, 10000000].map((v) => (
+            <button
+              key={v}
+              onClick={() => {
+                setMaxEarnings(v);
+                setSubmittedRequest(prev => prev ? { ...prev, max_earnings: v } : null);
+              }}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                maxEarnings === v
+                  ? 'bg-primary-500 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              ${v >= 1000000 ? `${v / 1000000}M` : `${v / 1000}k`}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Impact results */}
-      <ImpactAnalysis request={request} triggered={triggered} maxEarnings={maxEarnings} />
+      <ImpactAnalysis request={submittedRequest} triggered={triggered} maxEarnings={maxEarnings} />
     </div>
   );
 }

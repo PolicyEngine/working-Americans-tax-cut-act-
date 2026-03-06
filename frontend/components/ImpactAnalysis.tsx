@@ -10,6 +10,7 @@ import {
   Legend,
   ResponsiveContainer,
   ReferenceLine,
+  ReferenceDot,
 } from 'recharts';
 import { useHouseholdImpact } from '@/hooks/useHouseholdImpact';
 import type { HouseholdRequest } from '@/lib/types';
@@ -109,7 +110,7 @@ export default function ImpactAnalysis({ request, triggered, maxEarnings }: Prop
           Change in Net Income from WATCA Reform by Adjusted Gross Income ({request?.year ?? 2026})
         </h3>
         <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={chartData} margin={{ left: 20, right: 20, top: 5, bottom: 5 }}>
+          <LineChart data={chartData} margin={{ left: 30, right: 20, top: 5, bottom: 25 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
             <XAxis
               dataKey="income"
@@ -118,13 +119,18 @@ export default function ImpactAnalysis({ request, triggered, maxEarnings }: Prop
               stroke="#666"
               domain={[0, xMax]}
               allowDataOverflow={false}
+              label={{ value: 'Adjusted Gross Income', position: 'bottom', offset: 5, style: { fill: '#666', fontSize: 12 } }}
             />
-            <YAxis tickFormatter={formatCurrency} stroke="#666" width={80} />
+            <YAxis
+              tickFormatter={formatCurrency}
+              stroke="#666"
+              width={80}
+              label={{ value: 'Change in Net Income', angle: -90, position: 'left', offset: 0, style: { fill: '#666', fontSize: 12, textAnchor: 'middle' } }}
+            />
             <Tooltip
               formatter={(value: number) => formatCurrency(value)}
-              labelFormatter={(value: number) => `Income: ${formatCurrency(value)}`}
+              labelFormatter={(value: number) => `Adjusted Gross Income: ${formatCurrency(value)}`}
             />
-            <Legend />
             <ReferenceLine y={0} stroke="#666" strokeWidth={2} />
             <Line
               type="monotone"
@@ -134,6 +140,32 @@ export default function ImpactAnalysis({ request, triggered, maxEarnings }: Prop
               name="Change in Net Income"
               dot={false}
             />
+            {request && request.income <= xMax && (
+              <>
+                <ReferenceLine
+                  x={request.income}
+                  stroke="#374151"
+                  strokeDasharray="4 4"
+                  strokeWidth={1}
+                  label={{ value: formatCurrency(request.income), position: 'insideTopRight', fill: '#374151', fontSize: 11, offset: 8 }}
+                />
+                <ReferenceLine
+                  y={benefitData.difference}
+                  stroke="#374151"
+                  strokeDasharray="4 4"
+                  strokeWidth={1}
+                  label={{ value: formatCurrency(benefitData.difference), position: 'insideBottomRight', fill: '#374151', fontSize: 11, offset: 8 }}
+                />
+                <ReferenceDot
+                  x={request.income}
+                  y={benefitData.difference}
+                  r={6}
+                  fill="#319795"
+                  stroke="#fff"
+                  strokeWidth={2}
+                />
+              </>
+            )}
           </LineChart>
         </ResponsiveContainer>
       </div>
