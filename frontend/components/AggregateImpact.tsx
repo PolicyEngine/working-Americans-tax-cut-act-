@@ -188,25 +188,25 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
           <div>
             <h3 className="text-xl font-bold text-gray-800 mb-4">Impact by income bracket</h3>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-300">
+              <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-gray-50">
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Income bracket</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">Affected households</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">Total impact</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">Average impact</th>
+                  <tr className="border-b border-gray-300">
+                    <th className="text-left px-4 py-3 font-medium text-gray-900">Income bracket</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-900">Affected households</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-900">Total impact</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-900">Average impact</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {data.by_income_bracket.map((bracket, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm text-gray-900">{bracket.bracket}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900 text-right">{Math.round(bracket.beneficiaries).toLocaleString()}</td>
-                      <td className="px-4 py-3 text-sm font-semibold text-right"
+                    <tr key={index} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 text-gray-900">{bracket.bracket}</td>
+                      <td className="px-4 py-3 text-gray-700 text-right">{Math.round(bracket.beneficiaries).toLocaleString()}</td>
+                      <td className="px-4 py-3 font-semibold text-right"
                         style={{ color: bracket.total_cost >= 0 ? COLORS.positive : COLORS.negative }}>
                         {formatBillions(bracket.total_cost)}
                       </td>
-                      <td className="px-4 py-3 text-sm font-semibold text-right"
+                      <td className="px-4 py-3 font-semibold text-right"
                         style={{ color: bracket.avg_benefit >= 0 ? COLORS.positive : COLORS.negative }}>
                         {formatCurrencyWithSign(bracket.avg_benefit)}
                       </td>
@@ -234,7 +234,7 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
                 <BarChart data={Object.entries(data.decile.relative).map(([k, v]) => ({ decile: k, value: v * 100 }))} margin={CHART_MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                   <XAxis dataKey="decile" tick={TICK_STYLE} stroke="#A0AEC0" label={{ value: 'Income Decile', position: 'insideBottom', offset: -15, style: { ...TICK_STYLE, fill: '#718096' } }} />
-                  <YAxis tickFormatter={(v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`} tick={TICK_STYLE} stroke="#A0AEC0" width={60} />
+                  <YAxis tickFormatter={(v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`} tick={TICK_STYLE} stroke="#A0AEC0" width={60} allowDecimals={false} />
                   <Tooltip content={<CustomTooltip formatter={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`} />} />
                   <ReferenceLine y={0} stroke="#A0AEC0" strokeWidth={1} />
                   <Bar dataKey="value" name="Relative Impact (% of income)" radius={[2, 2, 0, 0]}>
@@ -255,7 +255,7 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
                 <BarChart data={Object.entries(data.decile.average).map(([k, v]) => ({ decile: k, value: v }))} margin={CHART_MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                   <XAxis dataKey="decile" tick={TICK_STYLE} stroke="#A0AEC0" label={{ value: 'Income Decile', position: 'insideBottom', offset: -15, style: { ...TICK_STYLE, fill: '#718096' } }} />
-                  <YAxis tickFormatter={formatCurrencyWithSign} tick={TICK_STYLE} stroke="#A0AEC0" width={80} />
+                  <YAxis tickFormatter={formatCurrencyWithSign} tick={TICK_STYLE} stroke="#A0AEC0" width={80} allowDecimals={false} />
                   <Tooltip content={<CustomTooltip formatter={(v) => formatCurrencyWithSign(v)} />} />
                   <ReferenceLine y={0} stroke="#A0AEC0" strokeWidth={1} />
                   <Bar dataKey="value" name="Average Impact" radius={[2, 2, 0, 0]}>
@@ -388,7 +388,7 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
                   <BarChart data={chartData} margin={CHART_MARGIN}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                     <XAxis dataKey="label" tick={TICK_STYLE} stroke="#A0AEC0" />
-                    <YAxis tickFormatter={(v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}pp`} tick={TICK_STYLE} stroke="#A0AEC0" width={70} />
+                    <YAxis tickFormatter={(v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}pp`} tick={TICK_STYLE} stroke="#A0AEC0" width={70} allowDecimals={false} />
                     <Tooltip content={<CustomTooltip formatter={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}pp`} />} />
                     <ReferenceLine y={0} stroke="#A0AEC0" strokeWidth={1} />
                     <Bar dataKey="ppChange" name="Change (pp)" radius={[2, 2, 0, 0]}>

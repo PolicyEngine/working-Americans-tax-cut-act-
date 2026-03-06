@@ -132,24 +132,24 @@ export default function PolicyOverview() {
           Exemption amounts and zero-tax thresholds
         </h3>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
+          <table className="w-full text-sm">
             <thead>
-              <tr className="bg-primary-50">
-                <th className="text-left p-3 border border-primary-100 text-primary-800">Filing status</th>
-                <th className="text-right p-3 border border-primary-100 text-primary-800">Exemption</th>
-                <th className="text-right p-3 border border-primary-100 text-primary-800">Phase-out ends</th>
-                <th className="text-right p-3 border border-primary-100 text-primary-800">Standard deduction</th>
-                <th className="text-right p-3 border border-primary-100 text-primary-800">Zero-tax threshold</th>
+              <tr className="border-b border-gray-300">
+                <th className="text-left px-4 py-3 font-medium text-gray-900">Filing status</th>
+                <th className="text-right px-4 py-3 font-medium text-gray-900">Exemption</th>
+                <th className="text-right px-4 py-3 font-medium text-gray-900">Phase-out ends</th>
+                <th className="text-right px-4 py-3 font-medium text-gray-900">Standard deduction</th>
+                <th className="text-right px-4 py-3 font-medium text-gray-900">Zero-tax threshold</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-200">
               {zeroTaxThresholds.map((fs) => (
-                <tr key={fs.key}>
-                  <td className="p-3 border font-medium">{fs.label}</td>
-                  <td className="p-3 border text-right">{formatDollarFull(fs.exemption)}</td>
-                  <td className="p-3 border text-right">{formatDollarFull(Math.round(fs.exemption * PHASE_OUT_MULTIPLE))}</td>
-                  <td className="p-3 border text-right">{formatDollarFull(fs.stdDed)}</td>
-                  <td className="p-3 border text-right font-semibold">{formatDollarFull(fs.threshold)}</td>
+                <tr key={fs.key} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3 font-medium text-gray-900">{fs.label}</td>
+                  <td className="px-4 py-3 text-right text-gray-700">{formatDollarFull(fs.exemption)}</td>
+                  <td className="px-4 py-3 text-right text-gray-700">{formatDollarFull(Math.round(fs.exemption * PHASE_OUT_MULTIPLE))}</td>
+                  <td className="px-4 py-3 text-right text-gray-700">{formatDollarFull(fs.stdDed)}</td>
+                  <td className="px-4 py-3 text-right font-semibold text-gray-900">{formatDollarFull(fs.threshold)}</td>
                 </tr>
               ))}
             </tbody>
@@ -275,18 +275,18 @@ export default function PolicyOverview() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <h4 className="font-medium text-primary-700 mb-2">Single / HOH / Separate</h4>
-            <table className="w-full text-sm border-collapse">
+            <table className="w-full text-sm">
               <thead>
-                <tr className="bg-primary-50">
-                  <th className="text-left p-2 border border-primary-100 text-primary-800">AGI threshold</th>
-                  <th className="text-right p-2 border border-primary-100 text-primary-800">Marginal rate</th>
+                <tr className="border-b border-gray-300">
+                  <th className="text-left px-4 py-2.5 font-medium text-gray-900">AGI threshold</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-gray-900">Marginal rate</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-200">
                 {SURTAX_SINGLE.map((b, i) => (
-                  <tr key={i}>
-                    <td className="p-2 border">{formatDollarFull(b.threshold)}{i < SURTAX_SINGLE.length - 1 ? ` – ${formatDollarFull(SURTAX_SINGLE[i + 1].threshold)}` : '+'}</td>
-                    <td className="p-2 border text-right">{(b.rate * 100).toFixed(0)}%</td>
+                  <tr key={i} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-2.5 text-gray-700">{formatDollarFull(b.threshold)}{i < SURTAX_SINGLE.length - 1 ? ` – ${formatDollarFull(SURTAX_SINGLE[i + 1].threshold)}` : '+'}</td>
+                    <td className="px-4 py-2.5 text-right text-gray-700">{(b.rate * 100).toFixed(0)}%</td>
                   </tr>
                 ))}
               </tbody>
@@ -294,18 +294,18 @@ export default function PolicyOverview() {
           </div>
           <div>
             <h4 className="font-medium text-primary-700 mb-2">Married filing jointly / Surviving spouse</h4>
-            <table className="w-full text-sm border-collapse">
+            <table className="w-full text-sm">
               <thead>
-                <tr className="bg-primary-50">
-                  <th className="text-left p-2 border border-primary-100 text-primary-800">AGI threshold</th>
-                  <th className="text-right p-2 border border-primary-100 text-primary-800">Marginal rate</th>
+                <tr className="border-b border-gray-300">
+                  <th className="text-left px-4 py-2.5 font-medium text-gray-900">AGI threshold</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-gray-900">Marginal rate</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-200">
                 {SURTAX_JOINT.map((b, i) => (
-                  <tr key={i}>
-                    <td className="p-2 border">{formatDollarFull(b.threshold)}{i < SURTAX_JOINT.length - 1 ? ` – ${formatDollarFull(SURTAX_JOINT[i + 1].threshold)}` : '+'}</td>
-                    <td className="p-2 border text-right">{(b.rate * 100).toFixed(0)}%</td>
+                  <tr key={i} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-2.5 text-gray-700">{formatDollarFull(b.threshold)}{i < SURTAX_JOINT.length - 1 ? ` – ${formatDollarFull(SURTAX_JOINT[i + 1].threshold)}` : '+'}</td>
+                    <td className="px-4 py-2.5 text-right text-gray-700">{(b.rate * 100).toFixed(0)}%</td>
                   </tr>
                 ))}
               </tbody>

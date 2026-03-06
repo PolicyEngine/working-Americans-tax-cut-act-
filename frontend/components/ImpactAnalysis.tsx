@@ -118,6 +118,7 @@ export default function ImpactAnalysis({ request, triggered, maxEarnings }: Prop
               tickFormatter={formatIncome}
               stroke="#666"
               domain={[0, xMax]}
+              allowDecimals={false}
               allowDataOverflow={false}
               label={{ value: 'Adjusted Gross Income', position: 'bottom', offset: 5, style: { fill: '#666', fontSize: 12 } }}
             />
@@ -125,6 +126,7 @@ export default function ImpactAnalysis({ request, triggered, maxEarnings }: Prop
               tickFormatter={formatCurrency}
               stroke="#666"
               width={80}
+              allowDecimals={false}
               label={{ value: 'Change in Net Income', angle: -90, position: 'left', offset: 0, style: { fill: '#666', fontSize: 12, textAnchor: 'middle' } }}
             />
             <Tooltip
