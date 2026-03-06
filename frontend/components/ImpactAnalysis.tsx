@@ -123,7 +123,7 @@ export default function ImpactAnalysis({ request, triggered, maxEarnings }: Prop
             <YAxis tickFormatter={formatCurrency} stroke="#666" width={80} />
             <Tooltip
               formatter={(value: number) => formatCurrency(value)}
-              labelFormatter={(value: number) => `Income: ${formatCurrency(value)}`}
+              labelFormatter={(value: number) => `Adjusted Gross Income: ${formatCurrency(value)}`}
             />
             <ReferenceLine y={0} stroke="#666" strokeWidth={2} />
             <Line
@@ -141,14 +141,14 @@ export default function ImpactAnalysis({ request, triggered, maxEarnings }: Prop
                   stroke="#374151"
                   strokeDasharray="4 4"
                   strokeWidth={1}
-                  label={{ value: formatCurrency(request.income), position: 'insideBottomLeft', fill: '#374151', fontSize: 11 }}
+                  label={{ value: formatCurrency(request.income), position: 'insideTopRight', fill: '#374151', fontSize: 11, offset: 8 }}
                 />
                 <ReferenceLine
                   y={benefitData.difference}
                   stroke="#374151"
                   strokeDasharray="4 4"
                   strokeWidth={1}
-                  label={{ value: formatCurrency(benefitData.difference), position: 'insideTopLeft', fill: '#374151', fontSize: 11 }}
+                  label={{ value: formatCurrency(benefitData.difference), position: 'insideBottomRight', fill: '#374151', fontSize: 11, offset: 8 }}
                 />
                 <ReferenceDot
                   x={request.income}
