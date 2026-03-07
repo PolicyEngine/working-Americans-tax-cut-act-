@@ -13,7 +13,7 @@ decile loops, child poverty age filtering).
 import numpy as np
 from policyengine_us import Microsimulation
 
-from .reforms import create_watca_reform
+from .reforms import create_watca_reform, create_cbo_lsr_reform
 
 
 # API v2 intra-decile bounds and labels
@@ -39,9 +39,11 @@ def _poverty_metrics(baseline_rate, reform_rate):
 
 
 def calculate_aggregate_impact(
-    surtax_enabled: bool = True, year: int = 2026
+    surtax_enabled: bool = True, year: int = 2026, cbo_lsr: bool = False
 ) -> dict:
     reforms = create_watca_reform(surtax_enabled=surtax_enabled, year=year)
+    if cbo_lsr:
+        reforms = reforms + (create_cbo_lsr_reform(),)
 
     sim_baseline = Microsimulation()
     sim_reform = Microsimulation(reform=reforms)
@@ -110,23 +112,39 @@ def calculate_aggregate_impact(
         "household_income_decile", period=year, map_to="household"
     )
 
+    # income_tax change for decile_tax tracking
+    fed_change = fed_reform - fed_baseline
+
     decile_average = {}
     decile_relative = {}
+    decile_average_tax = {}
+    decile_relative_tax = {}
     for d in range(1, 11):
         dmask = decile == d
         d_count = float(dmask.sum())
         if d_count > 0:
+            d_baseline_sum = float(baseline_net_income[dmask].sum())
+            # Net income based (primary)
             d_change_sum = float(income_change[dmask].sum())
             decile_average[str(d)] = d_change_sum / d_count
-            d_baseline_sum = float(baseline_net_income[dmask].sum())
             decile_relative[str(d)] = (
                 d_change_sum / d_baseline_sum
+                if d_baseline_sum != 0
+                else 0.0
+            )
+            # Income tax based
+            d_tax_sum = float((-fed_change[dmask]).sum())
+            decile_average_tax[str(d)] = d_tax_sum / d_count
+            decile_relative_tax[str(d)] = (
+                d_tax_sum / d_baseline_sum
                 if d_baseline_sum != 0
                 else 0.0
             )
         else:
             decile_average[str(d)] = 0.0
             decile_relative[str(d)] = 0.0
+            decile_average_tax[str(d)] = 0.0
+            decile_relative_tax[str(d)] = 0.0
 
     # Intra-decile requires person-weighted proportions — need numpy
     household_weight = sim_reform.calculate(
@@ -232,6 +250,7 @@ def calculate_aggregate_impact(
     )
     agi_arr = np.array(agi)
     change_arr = np.array(income_change)
+    tax_change_arr = np.array(-fed_change)  # positive = tax cut = benefit
     affected_mask = np.abs(change_arr) > 1
 
     income_brackets = [
@@ -259,14 +278,24 @@ def calculate_aggregate_impact(
             bracket_avg = float(
                 np.average(change_arr[mask], weights=weight_arr[mask])
             )
+            bracket_cost_tax = float(
+                (tax_change_arr[mask] * weight_arr[mask]).sum()
+            )
+            bracket_avg_tax = float(
+                np.average(tax_change_arr[mask], weights=weight_arr[mask])
+            )
         else:
             bracket_cost = 0.0
             bracket_avg = 0.0
+            bracket_cost_tax = 0.0
+            bracket_avg_tax = 0.0
         by_income_bracket.append({
             "bracket": label,
             "beneficiaries": bracket_affected,
             "total_cost": bracket_cost,
             "avg_benefit": bracket_avg,
+            "total_cost_tax": bracket_cost_tax,
+            "avg_benefit_tax": bracket_avg_tax,
         })
 
     return {
@@ -281,6 +310,10 @@ def calculate_aggregate_impact(
         "decile": {
             "average": decile_average,
             "relative": decile_relative,
+        },
+        "decile_tax": {
+            "average": decile_average_tax,
+            "relative": decile_relative_tax,
         },
         "intra_decile": {
             "all": intra_decile_all,

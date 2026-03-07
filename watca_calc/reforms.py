@@ -37,3 +37,25 @@ def create_watca_reform(surtax_enabled: bool = True, year: int = 2026):
     )
 
     return (structural_reform, param_reform)
+
+
+def create_cbo_lsr_reform():
+    """
+    Create a reform that enables CBO labor supply responses.
+
+    Sets the standard CBO elasticities:
+    - Income elasticity: -0.05
+    - Substitution elasticity: 0.25 (all deciles)
+    """
+    date_range = "2020-01-01.2100-12-31"
+    return Reform.from_dict(
+        {
+            "gov.simulation.labor_supply_responses.elasticities.income": {
+                date_range: -0.05,
+            },
+            "gov.simulation.labor_supply_responses.elasticities.substitution.all": {
+                date_range: 0.25,
+            },
+        },
+        country_id="us",
+    )
