@@ -1,8 +1,8 @@
 """Aggregate impact calculations using enhanced CPS microsimulation.
 
-Calculates both federal income_tax and state_income_tax to show separate
-federal and state/local revenue impacts. Winners/losers and decile
-analysis use the combined (federal + state) income change.
+Calculates federal income_tax, state_income_tax, and household_benefits
+for the budget waterfall. All distributional analysis (winners/losers,
+deciles, intra-decile) uses household_net_income, matching app-v2.
 
 Uses MicroSeries throughout where possible. MicroSeries.sum() is
 automatically weighted, and boolean masks preserve entity alignment.
@@ -47,25 +47,44 @@ def calculate_aggregate_impact(
     sim_reform = Microsimulation(reform=reforms)
 
     # ===== FISCAL IMPACT =====
+    # Federal income tax
     fed_baseline = sim_baseline.calculate(
         "income_tax", period=year, map_to="household"
     )
     fed_reform = sim_reform.calculate(
         "income_tax", period=year, map_to="household"
     )
-    federal_tax_revenue_impact = float(-(fed_baseline - fed_reform).sum())
+    federal_tax_revenue_impact = float((fed_reform - fed_baseline).sum())
 
+    # State/local income tax
     state_baseline = sim_baseline.calculate(
         "state_income_tax", period=year, map_to="household"
     )
     state_reform = sim_reform.calculate(
         "state_income_tax", period=year, map_to="household"
     )
-    state_tax_revenue_impact = float(-(state_baseline - state_reform).sum())
+    state_tax_revenue_impact = float((state_reform - state_baseline).sum())
 
-    # Combined income change for winners/losers/deciles
-    income_change = (fed_baseline - fed_reform) + (state_baseline - state_reform)
+    # Benefit spending
+    benefits_baseline = sim_baseline.calculate(
+        "household_benefits", period=year, map_to="household"
+    )
+    benefits_reform = sim_reform.calculate(
+        "household_benefits", period=year, map_to="household"
+    )
+    benefit_spending_impact = float((benefits_reform - benefits_baseline).sum())
+
     tax_revenue_impact = federal_tax_revenue_impact + state_tax_revenue_impact
+    budgetary_impact = tax_revenue_impact - benefit_spending_impact
+
+    # household_net_income change for all distributional analysis (app-v2 methodology)
+    baseline_net_income = sim_baseline.calculate(
+        "household_net_income", period=year, map_to="household"
+    )
+    reform_net_income = sim_reform.calculate(
+        "household_net_income", period=year, map_to="household"
+    )
+    income_change = reform_net_income - baseline_net_income
 
     # Total households: (x * 0 + 1).sum() = sum(weights)
     total_households = float((income_change * 0 + 1).sum())
@@ -89,9 +108,6 @@ def calculate_aggregate_impact(
     # ===== INCOME DECILE ANALYSIS =====
     decile = sim_baseline.calculate(
         "household_income_decile", period=year, map_to="household"
-    )
-    baseline_net_income = sim_baseline.calculate(
-        "household_net_income", period=year, map_to="household"
     )
 
     decile_average = {}
@@ -255,11 +271,11 @@ def calculate_aggregate_impact(
 
     return {
         "budget": {
-            "budgetary_impact": tax_revenue_impact,
+            "budgetary_impact": budgetary_impact,
             "federal_tax_revenue_impact": federal_tax_revenue_impact,
             "state_tax_revenue_impact": state_tax_revenue_impact,
             "tax_revenue_impact": tax_revenue_impact,
-            "benefit_spending_impact": 0.0,
+            "benefit_spending_impact": benefit_spending_impact,
             "households": total_households,
         },
         "decile": {
@@ -270,7 +286,7 @@ def calculate_aggregate_impact(
             "all": intra_decile_all,
             "deciles": intra_decile_deciles,
         },
-        "total_cost": -tax_revenue_impact,
+        "total_cost": -budgetary_impact,
         "beneficiaries": beneficiaries,
         "avg_benefit": avg_benefit,
         "winners": winners,

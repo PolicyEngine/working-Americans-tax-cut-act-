@@ -172,10 +172,11 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
       {activeSection === 'fiscal' && (
         <div className="space-y-6">
           {/* Budget breakdown cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { label: 'Federal tax revenue', value: data.budget.federal_tax_revenue_impact },
               { label: 'State/local tax revenue', value: data.budget.state_tax_revenue_impact },
+              { label: 'Benefit spending', value: -data.budget.benefit_spending_impact },
               { label: 'Net budgetary impact', value: data.budget.budgetary_impact },
             ].map(({ label, value }) => (
               <div
