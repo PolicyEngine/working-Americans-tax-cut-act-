@@ -55,6 +55,8 @@ def _extract_metrics(result: dict, variant: str, year: int) -> list[dict]:
     """Extract flat metrics into rows."""
     metrics = [
         ("budgetary_impact", result["budget"]["budgetary_impact"]),
+        ("federal_tax_revenue_impact", result["budget"]["federal_tax_revenue_impact"]),
+        ("state_tax_revenue_impact", result["budget"]["state_tax_revenue_impact"]),
         ("tax_revenue_impact", result["budget"]["tax_revenue_impact"]),
         ("benefit_spending_impact", result["budget"]["benefit_spending_impact"]),
         ("baseline_net_income", result["budget"].get("baseline_net_income", 0)),

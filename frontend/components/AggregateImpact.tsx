@@ -171,18 +171,28 @@ export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
       {/* ===== FISCAL IMPACT ===== */}
       {activeSection === 'fiscal' && (
         <div className="space-y-6">
-          {/* Headline number */}
-          <div className={`rounded-lg p-6 border ${
-            data.budget.budgetary_impact >= 0
-              ? 'bg-green-50 border-success'
-              : 'bg-red-50 border-red-300'
-          }`}>
-            <p className="text-sm text-gray-700 mb-2">Net budgetary impact ({selectedYear})</p>
-            <p className={`text-4xl font-bold ${
-              data.budget.budgetary_impact >= 0 ? 'text-green-600' : 'text-red-600'
-            }`}>
-              {formatBillions(data.budget.budgetary_impact)}
-            </p>
+          {/* Budget breakdown cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { label: 'Federal tax revenue', value: data.budget.federal_tax_revenue_impact },
+              { label: 'State/local tax revenue', value: data.budget.state_tax_revenue_impact },
+              { label: 'Benefit spending', value: -data.budget.benefit_spending_impact },
+              { label: 'Net budgetary impact', value: data.budget.budgetary_impact },
+            ].map(({ label, value }) => (
+              <div
+                key={label}
+                className={`rounded-lg p-6 border ${
+                  value >= 0 ? 'bg-green-50 border-success' : 'bg-red-50 border-red-300'
+                }`}
+              >
+                <p className="text-sm text-gray-700 mb-2">{label} ({selectedYear})</p>
+                <p className={`text-3xl font-bold ${
+                  value >= 0 ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {formatBillions(value)}
+                </p>
+              </div>
+            ))}
           </div>
 
           {/* Income bracket table */}
