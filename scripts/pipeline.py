@@ -1,6 +1,6 @@
 """Data generation pipeline for WATCA calculator dashboard.
 
-Runs microsimulation for both reform variants (with/without surtax)
+Runs microsimulation for reform variants (with/without surtax, with CBO LSR)
 across multiple years and saves output to frontend/public/data/ as CSV files.
 
 Uses subprocess isolation per year to prevent memory accumulation.
@@ -41,13 +41,17 @@ def _extract_distributional(result: dict, variant: str, year: int) -> list[dict]
     """Extract distributional impact rows from aggregate result."""
     rows = []
     for decile, avg in result["decile"]["average"].items():
-        rows.append({
+        row = {
             "year": year,
             "variant": variant,
             "decile": decile,
             "average_change": round(avg, 2),
             "relative_change": round(result["decile"]["relative"][decile], 6),
-        })
+        }
+        if "decile_tax" in result:
+            row["average_change_tax"] = round(result["decile_tax"]["average"][decile], 2)
+            row["relative_change_tax"] = round(result["decile_tax"]["relative"][decile], 6)
+        rows.append(row)
     return rows
 
 
@@ -131,20 +135,30 @@ def _extract_income_brackets(result: dict, variant: str, year: int) -> list[dict
             "beneficiaries": b["beneficiaries"],
             "total_cost": b["total_cost"],
             "avg_benefit": b["avg_benefit"],
+            "total_cost_tax": b.get("total_cost_tax", 0),
+            "avg_benefit_tax": b.get("avg_benefit_tax", 0),
         }
         for b in result["by_income_bracket"]
     ]
 
 
+# Variant definitions: (surtax_enabled, cbo_lsr, label)
+VARIANTS = [
+    (True, False, "with_surtax"),
+    (False, False, "without_surtax"),
+    (True, True, "with_surtax_lsr"),
+]
+
+
 def _run_year_in_process(year: int) -> dict:
-    """Run both surtax variants for a single year, then free memory."""
+    """Run all variants for a single year, then free memory."""
     from watca_calc.microsimulation import calculate_aggregate_impact
 
     results = {}
-    for surtax_enabled, variant in [(True, "with_surtax"), (False, "without_surtax")]:
+    for surtax_enabled, cbo_lsr, variant in VARIANTS:
         print(f"  Computing {variant}...")
         results[variant] = calculate_aggregate_impact(
-            surtax_enabled=surtax_enabled, year=year
+            surtax_enabled=surtax_enabled, year=year, cbo_lsr=cbo_lsr
         )
         gc.collect()
 
