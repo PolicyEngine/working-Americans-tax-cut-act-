@@ -165,18 +165,22 @@ def _run_year_in_process(year: int) -> dict:
     return results
 
 
-def _run_year_subprocess(year: int) -> dict:
-    """Run both variants for one year in a subprocess to isolate memory."""
+def _run_variant_subprocess(year: int, surtax_enabled: bool, cbo_lsr: bool, variant: str) -> dict | None:
+    """Run a single variant in its own subprocess. Returns result or None on failure."""
     worker_script = os.path.join(os.path.dirname(__file__), "_pipeline_worker.py")
     proc = subprocess.run(
-        [sys.executable, "-u", worker_script, str(year)],
+        [
+            sys.executable, "-u", worker_script,
+            str(year), str(surtax_enabled), str(cbo_lsr), variant,
+        ],
         capture_output=False,
         stderr=None,  # inherit stderr so progress shows in real-time
         stdout=subprocess.PIPE,
         text=True,
     )
     if proc.returncode != 0:
-        raise RuntimeError(f"Worker failed for year {year}")
+        print(f"  WARNING: {variant} failed for year {year} (exit {proc.returncode}), skipping.")
+        return None
     return json.loads(proc.stdout)
 
 
@@ -192,28 +196,34 @@ def generate_all_data(output_dir: str = None, use_subprocess: bool = True) -> di
     for i, year in enumerate(YEARS):
         print(f"\n[{i + 1}/{len(YEARS)}] Year {year}...")
 
-        if use_subprocess:
-            year_results = _run_year_subprocess(year)
-        else:
-            year_results = _run_year_in_process(year)
+        for surtax_enabled, cbo_lsr, variant in VARIANTS:
+            if use_subprocess:
+                result = _run_variant_subprocess(year, surtax_enabled, cbo_lsr, variant)
+            else:
+                from watca_calc.microsimulation import calculate_aggregate_impact
+                print(f"  Computing {variant}...")
+                result = calculate_aggregate_impact(
+                    surtax_enabled=surtax_enabled, year=year, cbo_lsr=cbo_lsr
+                )
+                gc.collect()
 
-        for variant, result in year_results.items():
-            all_distributional.extend(_extract_distributional(result, variant, year))
-            all_metrics.extend(_extract_metrics(result, variant, year))
-            all_winners_losers.extend(_extract_winners_losers(result, variant, year))
-            all_income_brackets.extend(_extract_income_brackets(result, variant, year))
+            if result is not None:
+                all_distributional.extend(_extract_distributional(result, variant, year))
+                all_metrics.extend(_extract_metrics(result, variant, year))
+                all_winners_losers.extend(_extract_winners_losers(result, variant, year))
+                all_income_brackets.extend(_extract_income_brackets(result, variant, year))
 
-        print(f"  Year {year} complete.")
+        # Save incrementally after each year
+        results = {
+            "distributional_impact": pd.DataFrame(all_distributional),
+            "metrics": pd.DataFrame(all_metrics),
+            "winners_losers": pd.DataFrame(all_winners_losers),
+            "income_brackets": pd.DataFrame(all_income_brackets),
+        }
+        for name, df in results.items():
+            _save_csv(df, os.path.join(output_dir, f"{name}.csv"))
 
-    results = {
-        "distributional_impact": pd.DataFrame(all_distributional),
-        "metrics": pd.DataFrame(all_metrics),
-        "winners_losers": pd.DataFrame(all_winners_losers),
-        "income_brackets": pd.DataFrame(all_income_brackets),
-    }
-
-    for name, df in results.items():
-        _save_csv(df, os.path.join(output_dir, f"{name}.csv"))
+        print(f"  Year {year} complete — CSVs updated.")
 
     print(f"\nAll data saved to {output_dir}/")
     return results

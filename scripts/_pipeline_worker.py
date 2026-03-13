@@ -1,8 +1,8 @@
-"""Subprocess worker for pipeline.py — runs one year in an isolated process.
+"""Subprocess worker for pipeline.py — runs one variant for one year.
 
-Usage: python scripts/_pipeline_worker.py <year>
+Usage: python scripts/_pipeline_worker.py <year> <surtax> <cbo_lsr> <variant>
 
-Outputs JSON to stdout with all variants' results.
+Outputs JSON to stdout with the single variant's result.
 All progress messages go to stderr to keep stdout clean for JSON.
 """
 
@@ -30,29 +30,22 @@ def _convert_for_json(obj):
     return obj
 
 
-# Must match pipeline.py VARIANTS
-VARIANTS = [
-    (True, False, "with_surtax"),
-    (False, False, "without_surtax"),
-    (True, True, "with_surtax_lsr"),
-]
-
-
 def main():
     year = int(sys.argv[1])
+    surtax_enabled = sys.argv[2] == "True"
+    cbo_lsr = sys.argv[3] == "True"
+    variant = sys.argv[4]
+
     from watca_calc.microsimulation import calculate_aggregate_impact
 
-    results = {}
-    for surtax_enabled, cbo_lsr, variant in VARIANTS:
-        print(f"  Computing {variant} {year}...", file=sys.stderr)
-        result = calculate_aggregate_impact(
-            surtax_enabled=surtax_enabled, year=year, cbo_lsr=cbo_lsr
-        )
-        results[variant] = _convert_for_json(result)
-        print(f"  Done: {variant} {year}", file=sys.stderr)
+    print(f"  Computing {variant} {year}...", file=sys.stderr)
+    result = calculate_aggregate_impact(
+        surtax_enabled=surtax_enabled, year=year, cbo_lsr=cbo_lsr
+    )
+    result = _convert_for_json(result)
+    print(f"  Done: {variant} {year}", file=sys.stderr)
 
-    # Output JSON to stdout
-    json.dump(results, sys.stdout)
+    json.dump(result, sys.stdout)
 
 
 if __name__ == "__main__":
