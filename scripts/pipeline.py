@@ -181,16 +181,40 @@ def _run_year_subprocess(year: int) -> dict:
 
 
 def generate_all_data(output_dir: str = None, use_subprocess: bool = True) -> dict[str, pd.DataFrame]:
-    """Generate all dashboard data as CSVs for all years and variants."""
+    """Generate all dashboard data as CSVs for all years and variants.
+
+    Saves incrementally after each year so partial results survive crashes.
+    On startup, loads any existing CSVs and skips years already computed.
+    """
     output_dir = output_dir or DEFAULT_OUTPUT_DIR
+    os.makedirs(output_dir, exist_ok=True)
 
-    all_distributional = []
-    all_metrics = []
-    all_winners_losers = []
-    all_income_brackets = []
+    csv_names = ["distributional_impact", "metrics", "winners_losers", "income_brackets"]
+    accumulators = {name: [] for name in csv_names}
+    extractors = {
+        "distributional_impact": _extract_distributional,
+        "metrics": _extract_metrics,
+        "winners_losers": _extract_winners_losers,
+        "income_brackets": _extract_income_brackets,
+    }
 
-    for i, year in enumerate(YEARS):
-        print(f"\n[{i + 1}/{len(YEARS)}] Year {year}...")
+    # Resume: load existing CSVs and figure out which years are done
+    completed_years = set()
+    for name in csv_names:
+        path = os.path.join(output_dir, f"{name}.csv")
+        if os.path.exists(path):
+            existing = pd.read_csv(path)
+            accumulators[name] = existing.to_dict("records")
+            if "year" in existing.columns:
+                completed_years = completed_years | set(existing["year"].unique())
+
+    if completed_years:
+        print(f"Resuming — already completed years: {sorted(completed_years)}")
+
+    remaining_years = [y for y in YEARS if y not in completed_years]
+
+    for i, year in enumerate(remaining_years):
+        print(f"\n[{i + 1}/{len(remaining_years)}] Year {year}...")
 
         if use_subprocess:
             year_results = _run_year_subprocess(year)
@@ -198,23 +222,29 @@ def generate_all_data(output_dir: str = None, use_subprocess: bool = True) -> di
             year_results = _run_year_in_process(year)
 
         for variant, result in year_results.items():
-            all_distributional.extend(_extract_distributional(result, variant, year))
-            all_metrics.extend(_extract_metrics(result, variant, year))
-            all_winners_losers.extend(_extract_winners_losers(result, variant, year))
-            all_income_brackets.extend(_extract_income_brackets(result, variant, year))
+            accumulators["distributional_impact"].extend(
+                _extract_distributional(result, variant, year)
+            )
+            accumulators["metrics"].extend(
+                _extract_metrics(result, variant, year)
+            )
+            accumulators["winners_losers"].extend(
+                _extract_winners_losers(result, variant, year)
+            )
+            accumulators["income_brackets"].extend(
+                _extract_income_brackets(result, variant, year)
+            )
 
-        print(f"  Year {year} complete.")
+        # Save all CSVs after each year so progress is preserved
+        for name in csv_names:
+            _save_csv(
+                pd.DataFrame(accumulators[name]),
+                os.path.join(output_dir, f"{name}.csv"),
+            )
 
-    results = {
-        "distributional_impact": pd.DataFrame(all_distributional),
-        "metrics": pd.DataFrame(all_metrics),
-        "winners_losers": pd.DataFrame(all_winners_losers),
-        "income_brackets": pd.DataFrame(all_income_brackets),
-    }
+        print(f"  Year {year} complete — CSVs updated.")
 
-    for name, df in results.items():
-        _save_csv(df, os.path.join(output_dir, f"{name}.csv"))
-
+    results = {name: pd.DataFrame(accumulators[name]) for name in csv_names}
     print(f"\nAll data saved to {output_dir}/")
     return results
 
