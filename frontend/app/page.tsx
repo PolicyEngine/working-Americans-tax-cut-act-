@@ -87,7 +87,6 @@ function HouseholdImpactTab() {
   const [married, setMarried] = useState(false);
   const [dependentAges, setDependentAges] = useState<number[]>([]);
   const [income, setIncome] = useState(75000);
-  const [surtaxEnabled, setSurtaxEnabled] = useState(true);
   const [stateCode, setStateCode] = useState('CA');
   const [maxEarnings, setMaxEarnings] = useState(500000);
   const [triggered, setTriggered] = useState(false);
@@ -120,7 +119,7 @@ function HouseholdImpactTab() {
     year: 2026,
     max_earnings: maxEarnings,
     state_code: stateCode,
-    reform_params: { surtax_enabled: surtaxEnabled },
+    reform_params: { surtax_enabled: true },
   });
 
   const handleCalculate = () => {
@@ -249,26 +248,8 @@ function HouseholdImpactTab() {
           </div>
         </div>
 
-        {/* Surtax toggle + Calculate */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-gray-200">
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => setSurtaxEnabled(!surtaxEnabled)}
-              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
-                surtaxEnabled ? 'bg-primary-500' : 'bg-gray-300'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  surtaxEnabled ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-            <span className="text-sm text-gray-700">
-              Include millionaire surtax
-            </span>
-          </div>
-
+        {/* Calculate button */}
+        <div className="flex justify-end pt-4 border-t border-gray-200">
           <button
             onClick={handleCalculate}
             className="py-2.5 px-8 rounded-lg font-semibold text-white bg-primary-500 hover:bg-primary-600 transition-colors shadow-sm sm:w-auto w-full"
@@ -307,32 +288,32 @@ function HouseholdImpactTab() {
   );
 }
 
-/** National impact tab — includes surtax toggle */
+/** National impact tab — includes behavioral response toggle */
 function NationalImpactTab() {
-  const [surtaxEnabled, setSurtaxEnabled] = useState(true);
+  const [behavioralResponses, setBehavioralResponses] = useState(false);
 
   return (
     <div className="space-y-6">
-      {/* Surtax toggle */}
+      {/* Behavioral response toggle */}
       <div className="flex items-center space-x-3 bg-gray-50 rounded-lg p-4 border border-gray-200">
         <button
-          onClick={() => setSurtaxEnabled(!surtaxEnabled)}
+          onClick={() => setBehavioralResponses(!behavioralResponses)}
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-            surtaxEnabled ? 'bg-primary-500' : 'bg-gray-300'
+            behavioralResponses ? 'bg-primary-500' : 'bg-gray-300'
           }`}
         >
           <span
             className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-              surtaxEnabled ? 'translate-x-6' : 'translate-x-1'
+              behavioralResponses ? 'translate-x-6' : 'translate-x-1'
             }`}
           />
         </button>
         <span className="text-sm text-gray-700">
-          Include millionaire surtax
+          Include behavioral responses (labor supply + capital gains)
         </span>
       </div>
 
-      <AggregateImpact surtaxEnabled={surtaxEnabled} triggered={true} />
+      <AggregateImpact behavioralResponses={behavioralResponses} triggered={true} />
     </div>
   );
 }

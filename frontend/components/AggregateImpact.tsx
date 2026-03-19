@@ -61,13 +61,13 @@ function CustomTooltip({ active, payload, label, formatter }: {
 }
 
 interface Props {
-  surtaxEnabled: boolean;
+  behavioralResponses: boolean;
   triggered: boolean;
 }
 
-export default function AggregateImpact({ surtaxEnabled, triggered }: Props) {
+export default function AggregateImpact({ behavioralResponses, triggered }: Props) {
   const [selectedYear, setSelectedYear] = useState(2026);
-  const { data, isLoading, error } = useAggregateImpact(surtaxEnabled, triggered, selectedYear);
+  const { data, isLoading, error } = useAggregateImpact(behavioralResponses, triggered, selectedYear);
   const [activeSection, setActiveSection] = useState<'fiscal' | 'distributional' | 'winners' | 'poverty'>('fiscal');
   const [distMode, setDistMode] = useState<'relative' | 'absolute'>('relative');
 
