@@ -33,9 +33,6 @@ def _convert_for_json(obj):
 # Must match pipeline.py VARIANTS
 VARIANTS = [
     (True, False, False, "with_surtax"),
-    (False, False, False, "without_surtax"),
-    (True, True, False, "with_surtax_lsr"),
-    (True, False, True, "with_surtax_cg"),
     (True, True, True, "with_surtax_lsr_cg"),
 ]
 
