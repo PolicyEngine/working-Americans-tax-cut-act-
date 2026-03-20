@@ -309,7 +309,7 @@ function NationalImpactTab() {
           />
         </button>
         <span className="text-sm text-gray-700">
-          Include behavioral responses (labor supply + capital gains)
+          Include CBO/JCT behavioral responses
         </span>
       </div>
 

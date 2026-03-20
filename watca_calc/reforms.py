@@ -61,14 +61,14 @@ def create_cbo_lsr_reform():
     )
 
 
-def create_cg_response_reform(elasticity: float = -0.62):
+def create_cg_response_reform(elasticity: float = -0.68):
     """
     Create a reform that enables capital gains behavioral responses.
 
     Args:
         elasticity: Elasticity of capital gains realizations with respect
-            to the capital gains marginal tax rate. Default -0.62 follows
-            Yale Budget Lab's estimate.
+            to the capital gains marginal tax rate. Default -0.68 follows
+            JCT's official scoring convention.
     """
     date_range = "2020-01-01.2100-12-31"
     return Reform.from_dict(
