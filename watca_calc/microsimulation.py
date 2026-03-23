@@ -13,7 +13,7 @@ decile loops, child poverty age filtering).
 import numpy as np
 from policyengine_us import Microsimulation
 
-from .reforms import create_watca_reform, create_cbo_lsr_reform
+from .reforms import create_watca_reform, create_cbo_lsr_reform, create_cg_response_reform
 
 
 # API v2 intra-decile bounds and labels
@@ -39,11 +39,16 @@ def _poverty_metrics(baseline_rate, reform_rate):
 
 
 def calculate_aggregate_impact(
-    surtax_enabled: bool = True, year: int = 2026, cbo_lsr: bool = False
+    surtax_enabled: bool = True,
+    year: int = 2026,
+    cbo_lsr: bool = False,
+    cg_response: bool = False,
 ) -> dict:
     reforms = create_watca_reform(surtax_enabled=surtax_enabled, year=year)
     if cbo_lsr:
         reforms = reforms + (create_cbo_lsr_reform(),)
+    if cg_response:
+        reforms = reforms + (create_cg_response_reform(),)
 
     sim_baseline = Microsimulation()
     sim_reform = Microsimulation(reform=reforms)

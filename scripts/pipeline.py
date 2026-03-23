@@ -142,11 +142,10 @@ def _extract_income_brackets(result: dict, variant: str, year: int) -> list[dict
     ]
 
 
-# Variant definitions: (surtax_enabled, cbo_lsr, label)
+# Variant definitions: (surtax_enabled, cbo_lsr, cg_response, label)
 VARIANTS = [
-    (True, False, "with_surtax"),
-    (False, False, "without_surtax"),
-    (True, True, "with_surtax_lsr"),
+    (True, False, False, "with_surtax"),
+    (True, True, True, "with_surtax_lsr_cg"),
 ]
 
 
@@ -155,10 +154,13 @@ def _run_year_in_process(year: int) -> dict:
     from watca_calc.microsimulation import calculate_aggregate_impact
 
     results = {}
-    for surtax_enabled, cbo_lsr, variant in VARIANTS:
+    for surtax_enabled, cbo_lsr, cg_response, variant in VARIANTS:
         print(f"  Computing {variant}...")
         results[variant] = calculate_aggregate_impact(
-            surtax_enabled=surtax_enabled, year=year, cbo_lsr=cbo_lsr
+            surtax_enabled=surtax_enabled,
+            year=year,
+            cbo_lsr=cbo_lsr,
+            cg_response=cg_response,
         )
         gc.collect()
 

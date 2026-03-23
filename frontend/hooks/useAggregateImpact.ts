@@ -111,11 +111,11 @@ function buildAggregateResponse(variant: string, year: number): Promise<Aggregat
 }
 
 export function useAggregateImpact(
-  surtaxEnabled: boolean,
+  behavioralResponses: boolean,
   enabled: boolean,
   year: number = 2026
 ) {
-  const variant = surtaxEnabled ? "with_surtax" : "without_surtax";
+  const variant = behavioralResponses ? "with_surtax_lsr_cg" : "with_surtax";
   return useQuery<AggregateImpactResponse>({
     queryKey: ["aggregateImpact", variant, year],
     queryFn: () => buildAggregateResponse(variant, year),

@@ -59,3 +59,23 @@ def create_cbo_lsr_reform():
         },
         country_id="us",
     )
+
+
+def create_cg_response_reform(elasticity: float = -0.68):
+    """
+    Create a reform that enables capital gains behavioral responses.
+
+    Args:
+        elasticity: Elasticity of capital gains realizations with respect
+            to the capital gains marginal tax rate. Default -0.68 follows
+            JCT's official scoring convention.
+    """
+    date_range = "2020-01-01.2100-12-31"
+    return Reform.from_dict(
+        {
+            "gov.simulation.capital_gains_responses.elasticity": {
+                date_range: elasticity,
+            },
+        },
+        country_id="us",
+    )
