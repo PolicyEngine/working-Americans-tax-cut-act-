@@ -1,0 +1,5 @@
+# Working Americans' Tax Cut Act Calculator - PolicyEngine
+User-agent: *
+Allow: /
+
+Sitemap: https://policyengine.org/us/watca/sitemap.xml
