@@ -132,13 +132,15 @@ export default function AggregateImpact({ behavioralResponses, triggered }: Prop
       </p>
 
       {/* Year selector */}
-      <div>
-        <p className="text-sm text-gray-500 mb-2">Select year</p>
-        <div className="flex flex-wrap gap-1.5">
+      <div role="group" aria-label="Select year">
+        <p className="text-sm text-gray-500 mb-2" id="year-selector-label">Select year</p>
+        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-labelledby="year-selector-label">
           {YEARS.map((year) => (
             <button
               key={year}
               onClick={() => setSelectedYear(year)}
+              role="radio"
+              aria-checked={selectedYear === year}
               className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                 selectedYear === year
                   ? 'bg-primary-500 text-white'
@@ -152,11 +154,12 @@ export default function AggregateImpact({ behavioralResponses, triggered }: Prop
       </div>
 
       {/* Sub-navigation */}
-      <div className="flex flex-wrap gap-2">
+      <nav className="flex flex-wrap gap-2" aria-label="Impact analysis sections">
         {sections.map((s) => (
           <button
             key={s.key}
             onClick={() => setActiveSection(s.key)}
+            aria-current={activeSection === s.key ? 'true' : undefined}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeSection === s.key
                 ? 'bg-primary-500 text-white'
@@ -166,7 +169,7 @@ export default function AggregateImpact({ behavioralResponses, triggered }: Prop
             {s.label}
           </button>
         ))}
-      </div>
+      </nav>
 
       {/* ===== FISCAL IMPACT ===== */}
       {activeSection === 'fiscal' && (

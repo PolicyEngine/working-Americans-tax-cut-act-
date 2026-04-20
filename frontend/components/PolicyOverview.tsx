@@ -98,9 +98,9 @@ export default function PolicyOverview() {
   });
 
   return (
-    <div className="space-y-10">
+    <article className="space-y-10">
       {/* Summary */}
-      <div>
+      <section aria-label="Policy summary">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">
           Working Americans&apos; Tax Cut Act
         </h2>
@@ -124,10 +124,10 @@ export default function PolicyOverview() {
             </p>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Exemption amounts table */}
-      <div>
+      <section aria-label="Exemption amounts and zero-tax thresholds">
         <h3 className="text-lg font-semibold text-gray-900 mb-3">
           Exemption amounts and zero-tax thresholds
         </h3>
@@ -161,10 +161,10 @@ export default function PolicyOverview() {
             effective rate is $2.33 per dollar.
           </p>
         </div>
-      </div>
+      </section>
 
       {/* Exemption phase-out chart */}
-      <div>
+      <section aria-label="Exemption phase-out chart">
         <h3 className="text-lg font-semibold text-gray-900 mb-3">
           Exemption amount by AGI
         </h3>
@@ -194,10 +194,10 @@ export default function PolicyOverview() {
             </AreaChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </section>
 
-      {/* Taxable income comparison — tabbed by filing status */}
-      <div>
+      {/* Taxable income comparison -- tabbed by filing status */}
+      <section aria-label="Taxable income comparison">
         <h3 className="text-lg font-semibold text-gray-900 mb-3">
           Taxable income: baseline vs. WATCA
         </h3>
@@ -265,10 +265,10 @@ export default function PolicyOverview() {
             </LineChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </section>
 
       {/* Surtax brackets */}
-      <div>
+      <section aria-label="Millionaire surtax brackets">
         <h3 className="text-lg font-semibold text-gray-900 mb-3">
           Millionaire surtax brackets
         </h3>
@@ -312,10 +312,10 @@ export default function PolicyOverview() {
             </table>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Sources */}
-      <div className="border-t pt-4 text-sm text-gray-500">
+      <footer className="border-t pt-4 text-sm text-gray-500" aria-label="Sources">
         <p className="font-medium mb-1">Sources</p>
         <ul className="space-y-1">
           <li>
@@ -339,7 +339,7 @@ export default function PolicyOverview() {
             </a>
           </li>
         </ul>
-      </div>
-    </div>
+      </footer>
+    </article>
   );
 }

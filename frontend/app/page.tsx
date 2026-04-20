@@ -30,9 +30,9 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'policy' | 'impact' | 'aggregate'>('policy');
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-primary-500 text-white py-8 px-4 shadow-md">
+    <main className="min-h-screen bg-gray-50">
+      {/* Hero Section */}
+      <section className="bg-primary-500 text-white py-8 px-4 shadow-md" aria-label="Page introduction">
         <div className="max-w-5xl mx-auto">
           <h1 className="text-4xl font-bold mb-2">
             Working Americans&apos; Tax Cut Act Calculator
@@ -41,15 +41,19 @@ export default function Home() {
             Estimate the impact of the cost-of-living exemption and millionaire surtax
           </p>
         </div>
-      </div>
+      </section>
 
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Tabs */}
-        <div className="flex space-x-1 mb-4">
+        <nav aria-label="Calculator sections" className="flex space-x-1 mb-4" role="tablist">
           {(['policy', 'impact', 'aggregate'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
+              role="tab"
+              aria-selected={activeTab === tab}
+              aria-controls={`tabpanel-${tab}`}
+              id={`tab-${tab}`}
               className={`px-6 py-3 rounded-t-lg font-semibold transition-colors ${
                 activeTab === tab
                   ? 'bg-white text-primary-600 border-t-4 border-primary-500'
@@ -63,10 +67,15 @@ export default function Home() {
                 : 'National impact'}
             </button>
           ))}
-        </div>
+        </nav>
 
         {/* Tab Content */}
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <section
+          className="bg-white rounded-lg shadow-md p-6"
+          role="tabpanel"
+          id={`tabpanel-${activeTab}`}
+          aria-labelledby={`tab-${activeTab}`}
+        >
           {activeTab === 'policy' ? (
             <PolicyOverview />
           ) : activeTab === 'impact' ? (
@@ -74,9 +83,9 @@ export default function Home() {
           ) : (
             <NationalImpactTab />
           )}
-        </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -298,6 +307,9 @@ function NationalImpactTab() {
       <div className="flex items-center space-x-3 bg-gray-50 rounded-lg p-4 border border-gray-200">
         <button
           onClick={() => setBehavioralResponses(!behavioralResponses)}
+          role="switch"
+          aria-checked={behavioralResponses}
+          aria-label="Include CBO/JCT behavioral responses"
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
             behavioralResponses ? 'bg-primary-500' : 'bg-gray-300'
           }`}
