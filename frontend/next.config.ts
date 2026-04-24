@@ -1,9 +1,16 @@
 import type { NextConfig } from "next";
 
+const configuredBasePath = process.env.NEXT_PUBLIC_BASE_PATH;
+const basePath =
+  configuredBasePath === ""
+    ? undefined
+    : configuredBasePath || "/us/watca";
+const publicBasePath = configuredBasePath === "" ? "" : basePath || "";
+
 const nextConfig: NextConfig = {
-  basePath: "/us/watca",
+  ...(basePath ? { basePath } : {}),
   env: {
-    NEXT_PUBLIC_BASE_PATH: "/us/watca",
+    NEXT_PUBLIC_BASE_PATH: publicBasePath,
   },
   poweredByHeader: false,
   async headers() {
