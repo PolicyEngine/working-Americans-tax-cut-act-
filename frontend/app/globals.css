@@ -1,7 +1,7 @@
 /* Fonts loaded via <link> tags in layout.tsx for better performance */
 
 @import "tailwindcss";
-@import "../node_modules/@policyengine/design-system/dist/tokens.css";
+@import "../node_modules/@policyengine/ui-kit/dist/styles.css";
 
 @theme {
   /* Map PE design system colors to Tailwind theme */
