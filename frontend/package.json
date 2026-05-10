@@ -6,7 +6,7 @@
     "dev": "next dev -p 3007",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
     "@policyengine/ui-kit": "^0.9.0",
