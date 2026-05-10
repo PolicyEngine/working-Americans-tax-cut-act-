@@ -6,12 +6,15 @@ import { IconMenu2, IconChevronDown, IconWorld, IconX } from '@tabler/icons-reac
 const NAV_ITEMS = [
   { label: 'Research', href: 'https://policyengine.org/us/research' },
   { label: 'Model', href: 'https://policyengine.org/us/model' },
+  { label: 'API', href: 'https://policyengine.org/us/api' },
+  { label: 'Python', href: 'https://policyengine.org/us/python' },
   {
     label: 'About',
     hasDropdown: true,
     items: [
       { label: 'Team', href: 'https://policyengine.org/us/team' },
       { label: 'Supporters', href: 'https://policyengine.org/us/supporters' },
+      { label: 'Citations', href: 'https://policyengine.org/us/citations' },
     ],
   },
   { label: 'Donate', href: 'https://policyengine.org/us/donate' },
