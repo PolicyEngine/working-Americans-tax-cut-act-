@@ -23,9 +23,16 @@ FORBIDDEN_WEIGHT_NAMES = (
     "person" + "_weight",
     "tax_unit" + "_weight",
     "spm_unit" + "_weight",
+    "household_count_" + "people",
 )
 FORBIDDEN_MICROSIM_IMPORTS = (
     "from policyengine_us import " + "Microsimulation",
+)
+FORBIDDEN_MICROSERIES_STRIPPING_PATTERNS = (
+    ".values",
+    ".to_numpy(",
+    "np.array(",
+    "np.asarray(",
 )
 
 
@@ -49,6 +56,8 @@ def main(data_dir: str = None):
                 if not filename.endswith(".py"):
                     continue
                 path = os.path.join(dirpath, filename)
+                if os.path.samefile(path, __file__):
+                    continue
                 with open(path) as file:
                     text = file.read()
                 offenders = [
@@ -72,6 +81,18 @@ def main(data_dir: str = None):
                     (
                         f"{os.path.relpath(path, REPO_ROOT)} constructs "
                         "microsimulations through policyengine.py"
+                    ),
+                )
+                stripping_offenders = [
+                    pattern
+                    for pattern in FORBIDDEN_MICROSERIES_STRIPPING_PATTERNS
+                    if pattern in text
+                ]
+                check(
+                    not stripping_offenders,
+                    (
+                        f"{os.path.relpath(path, REPO_ROOT)} preserves "
+                        "MicroSeries entity context and weights"
                     ),
                 )
 

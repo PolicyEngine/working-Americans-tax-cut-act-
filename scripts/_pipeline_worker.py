@@ -7,6 +7,7 @@ All progress messages go to stderr to keep stdout clean for JSON.
 """
 
 import json
+import gc
 import os
 import sys
 
@@ -51,10 +52,14 @@ def main():
             cg_response=cg_response,
         )
         results[variant] = _convert_for_json(result)
+        del result
+        gc.collect()
         print(f"  Done: {variant} {year}", file=sys.stderr)
 
     # Output JSON to stdout
     json.dump(results, sys.stdout)
+    sys.stdout.flush()
+    gc.collect()
 
 
 if __name__ == "__main__":

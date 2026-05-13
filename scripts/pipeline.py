@@ -6,7 +6,8 @@ across multiple years and saves output to frontend/public/data/ as CSV files.
 Uses subprocess isolation per year to prevent memory accumulation.
 
 Usage:
-    python scripts/pipeline.py
+    python scripts/pipeline.py           # Resume from completed years
+    python scripts/pipeline.py --fresh   # Start from scratch
 """
 
 import gc
@@ -28,6 +29,12 @@ DEFAULT_OUTPUT_DIR = os.path.join(
 )
 
 YEARS = list(range(2026, 2036))
+CSV_FILES = [
+    "distributional_impact",
+    "metrics",
+    "winners_losers",
+    "income_brackets",
+]
 
 
 def _save_csv(df: pd.DataFrame, path: str) -> None:
@@ -35,6 +42,50 @@ def _save_csv(df: pd.DataFrame, path: str) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     df.to_csv(path, index=False)
     print(f"Saved: {path}")
+
+
+def _load_existing(output_dir: str) -> dict[str, pd.DataFrame]:
+    """Load existing CSVs if they exist."""
+    existing = {}
+    for name in CSV_FILES:
+        path = os.path.join(output_dir, f"{name}.csv")
+        if os.path.exists(path):
+            existing[name] = pd.read_csv(path)
+        else:
+            existing[name] = pd.DataFrame()
+    return existing
+
+
+def _completed_years(existing: dict[str, pd.DataFrame]) -> set[int]:
+    """Find years that already have metrics data."""
+    if existing["metrics"].empty or "year" not in existing["metrics"].columns:
+        return set()
+    return set(existing["metrics"]["year"].unique()) & set(YEARS)
+
+
+def _append_rows(
+    pending: dict[str, list[list[dict]]],
+    name: str,
+    rows: list[dict],
+) -> None:
+    """Buffer rows for later concat."""
+    pending[name].append(rows)
+
+
+def _flush_pending(
+    existing: dict[str, pd.DataFrame],
+    pending: dict[str, list[list[dict]]],
+) -> None:
+    """Concat all pending rows into existing DataFrames in one pass."""
+    for name in CSV_FILES:
+        if not pending[name]:
+            continue
+        new_df = pd.DataFrame([row for batch in pending[name] for row in batch])
+        if existing[name].empty:
+            existing[name] = new_df
+        else:
+            existing[name] = pd.concat([existing[name], new_df], ignore_index=True)
+        pending[name].clear()
 
 
 def _extract_distributional(result: dict, variant: str, year: int) -> list[dict]:
@@ -182,16 +233,32 @@ def _run_year_subprocess(year: int) -> dict:
     return json.loads(proc.stdout)
 
 
-def generate_all_data(output_dir: str = None, use_subprocess: bool = True) -> dict[str, pd.DataFrame]:
+def generate_all_data(
+    output_dir: str = None,
+    use_subprocess: bool = True,
+    fresh: bool = False,
+) -> dict[str, pd.DataFrame]:
     """Generate all dashboard data as CSVs for all years and variants."""
     output_dir = output_dir or DEFAULT_OUTPUT_DIR
 
-    all_distributional = []
-    all_metrics = []
-    all_winners_losers = []
-    all_income_brackets = []
+    if fresh:
+        existing = {name: pd.DataFrame() for name in CSV_FILES}
+        done = set()
+        print("Starting fresh — ignoring any existing data.")
+    else:
+        existing = _load_existing(output_dir)
+        done = _completed_years(existing)
+        if done:
+            print(f"Found existing data for years: {sorted(done)}")
 
-    for i, year in enumerate(YEARS):
+    remaining = [year for year in YEARS if year not in done]
+    if not remaining:
+        print("All years already computed. Use --fresh to regenerate.")
+        return existing
+
+    pending: dict[str, list[list[dict]]] = {name: [] for name in CSV_FILES}
+
+    for i, year in enumerate(remaining):
         print(f"\n[{i + 1}/{len(YEARS)}] Year {year}...")
 
         if use_subprocess:
@@ -200,26 +267,32 @@ def generate_all_data(output_dir: str = None, use_subprocess: bool = True) -> di
             year_results = _run_year_in_process(year)
 
         for variant, result in year_results.items():
-            all_distributional.extend(_extract_distributional(result, variant, year))
-            all_metrics.extend(_extract_metrics(result, variant, year))
-            all_winners_losers.extend(_extract_winners_losers(result, variant, year))
-            all_income_brackets.extend(_extract_income_brackets(result, variant, year))
+            _append_rows(
+                pending,
+                "distributional_impact",
+                _extract_distributional(result, variant, year),
+            )
+            _append_rows(pending, "metrics", _extract_metrics(result, variant, year))
+            _append_rows(
+                pending,
+                "winners_losers",
+                _extract_winners_losers(result, variant, year),
+            )
+            _append_rows(
+                pending,
+                "income_brackets",
+                _extract_income_brackets(result, variant, year),
+            )
+
+        _flush_pending(existing, pending)
+        for name in CSV_FILES:
+            _save_csv(existing[name], os.path.join(output_dir, f"{name}.csv"))
 
         print(f"  Year {year} complete.")
 
-    results = {
-        "distributional_impact": pd.DataFrame(all_distributional),
-        "metrics": pd.DataFrame(all_metrics),
-        "winners_losers": pd.DataFrame(all_winners_losers),
-        "income_brackets": pd.DataFrame(all_income_brackets),
-    }
-
-    for name, df in results.items():
-        _save_csv(df, os.path.join(output_dir, f"{name}.csv"))
-
     print(f"\nAll data saved to {output_dir}/")
-    return results
+    return existing
 
 
 if __name__ == "__main__":
-    generate_all_data()
+    generate_all_data(fresh="--fresh" in sys.argv)
