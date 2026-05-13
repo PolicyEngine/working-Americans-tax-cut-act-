@@ -190,6 +190,18 @@ export default function RootLayout({
       <body>
         <Header />
         <Providers>{children}</Providers>
+        <footer className="border-t border-gray-200 bg-white px-4 py-4 text-center text-xs text-gray-500">
+          Calculations powered by{' '}
+          <a
+            href="https://github.com/PolicyEngine/policyengine.py"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary-500 hover:underline"
+          >
+            policyengine
+          </a>
+          {' '}v4.4.4
+        </footer>
       </body>
     </html>
   );
