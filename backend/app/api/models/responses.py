@@ -1,6 +1,6 @@
 """Response models for WATCA calculator API."""
 
-from typing import Dict, List, Optional
+from typing import Dict, List
 from pydantic import BaseModel
 
 
@@ -27,6 +27,8 @@ class IncomeBracket(BaseModel):
 class BudgetImpact(BaseModel):
     baseline_net_income: float = 0.0
     budgetary_impact: float
+    federal_tax_revenue_impact: float = 0.0
+    state_tax_revenue_impact: float = 0.0
     tax_revenue_impact: float
     benefit_spending_impact: float
     households: float

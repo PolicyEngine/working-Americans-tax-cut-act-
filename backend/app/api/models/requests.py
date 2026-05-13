@@ -20,3 +20,5 @@ class HouseholdRequest(BaseModel):
 
 class AggregateImpactRequest(BaseModel):
     surtax_enabled: bool = Field(True)
+    behavioral_responses: bool = Field(False)
+    year: int = Field(2026, ge=2026, le=2035)

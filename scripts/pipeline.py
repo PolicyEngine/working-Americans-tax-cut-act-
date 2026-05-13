@@ -29,12 +29,25 @@ DEFAULT_OUTPUT_DIR = os.path.join(
 )
 
 YEARS = list(range(2026, 2036))
+
+# Variant definitions: (surtax_enabled, cbo_lsr, cg_response, label)
+VARIANTS = [
+    (True, False, False, "with_surtax"),
+    (True, True, True, "with_surtax_lsr_cg"),
+]
+VARIANT_LABELS = tuple(variant[-1] for variant in VARIANTS)
 CSV_FILES = [
     "distributional_impact",
     "metrics",
     "winners_losers",
     "income_brackets",
 ]
+EXPECTED_ROWS_PER_VARIANT = {
+    "distributional_impact": 10,
+    "metrics": 30,
+    "winners_losers": 11,
+    "income_brackets": 7,
+}
 
 
 def _save_csv(df: pd.DataFrame, path: str) -> None:
@@ -56,11 +69,44 @@ def _load_existing(output_dir: str) -> dict[str, pd.DataFrame]:
     return existing
 
 
+def _year_complete(existing: dict[str, pd.DataFrame], year: int) -> bool:
+    """Return true only when all generated CSVs contain a complete year."""
+    for name in CSV_FILES:
+        df = existing[name]
+        if df.empty or not {"year", "variant"}.issubset(df.columns):
+            return False
+
+        year_rows = df[df["year"] == year]
+        if set(year_rows["variant"].astype(str)) != set(VARIANT_LABELS):
+            return False
+
+        counts = year_rows.groupby("variant").size().to_dict()
+        expected_count = EXPECTED_ROWS_PER_VARIANT[name]
+        for variant in VARIANT_LABELS:
+            if counts.get(variant) != expected_count:
+                return False
+
+    return True
+
+
 def _completed_years(existing: dict[str, pd.DataFrame]) -> set[int]:
-    """Find years that already have metrics data."""
-    if existing["metrics"].empty or "year" not in existing["metrics"].columns:
-        return set()
-    return set(existing["metrics"]["year"].unique()) & set(YEARS)
+    """Find years whose persisted CSV rows are complete across all outputs."""
+    return {year for year in YEARS if _year_complete(existing, year)}
+
+
+def _keep_completed_years(
+    existing: dict[str, pd.DataFrame],
+    completed_years: set[int],
+) -> dict[str, pd.DataFrame]:
+    """Discard partial/stale rows before resuming generation."""
+    cleaned = {}
+    for name in CSV_FILES:
+        df = existing[name]
+        if df.empty or "year" not in df.columns:
+            cleaned[name] = df
+        else:
+            cleaned[name] = df[df["year"].isin(completed_years)].reset_index(drop=True)
+    return cleaned
 
 
 def _append_rows(
@@ -193,13 +239,6 @@ def _extract_income_brackets(result: dict, variant: str, year: int) -> list[dict
     ]
 
 
-# Variant definitions: (surtax_enabled, cbo_lsr, cg_response, label)
-VARIANTS = [
-    (True, False, False, "with_surtax"),
-    (True, True, True, "with_surtax_lsr_cg"),
-]
-
-
 def _run_year_in_process(year: int) -> dict:
     """Run all variants for a single year, then free memory."""
     from watca_calc.microsimulation import calculate_aggregate_impact
@@ -248,6 +287,7 @@ def generate_all_data(
     else:
         existing = _load_existing(output_dir)
         done = _completed_years(existing)
+        existing = _keep_completed_years(existing, done)
         if done:
             print(f"Found existing data for years: {sorted(done)}")
 
