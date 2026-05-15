@@ -4,7 +4,6 @@ import "@policyengine/ui-kit/styles.css";
 import Script from "next/script";
 import type { Metadata } from "next";
 import Providers from "./providers";
-import Header from "@/components/Header";
 import "./globals.css";
 
 const GA_ID = "G-2YHG89FY0N";
@@ -192,7 +191,6 @@ export default function RootLayout({
       </head>
       <body>
         <PolicyEngineShell country="us">
-        <Header />
         <Providers>{children}</Providers>
               </PolicyEngineShell>
       </body>
