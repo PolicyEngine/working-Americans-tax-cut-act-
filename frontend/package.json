@@ -9,7 +9,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@policyengine/ui-kit": "^0.9.0",
+    "@policyengine/ui-kit": "^0.12.0",
     "@tabler/icons-react": "^3.39.0",
     "@tanstack/react-query": "^5.17.9",
     "axios": "^1.6.5",
