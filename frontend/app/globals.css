@@ -1,6 +1,7 @@
 /* Fonts loaded via <link> tags in layout.tsx for better performance */
 
 @import "tailwindcss";
+@import "@policyengine/ui-kit/theme.css";
 @import "../node_modules/@policyengine/ui-kit/dist/styles.css";
 
 /*
