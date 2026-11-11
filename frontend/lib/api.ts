@@ -1,63 +1,140 @@
+/**
+ * Household impact via www.policyengine.org's dashboard API.
+ *
+ * The page never calls the PolicyEngine Public API itself: the dashboard
+ * API's server adds PolicyEngine's credential and forwards each household
+ * to the Public API's /us/calculate.
+ */
+
+import {
+  createPolicyEngineApiClient,
+  PolicyEngineApiError,
+} from "@policyengine/api-client";
+
 import {
   HouseholdRequest,
   HouseholdImpactResponse,
 } from "./types";
 import { buildHouseholdSituation } from "./household";
 
-const PE_API_URL = "https://api.policyengine.org";
+const policyengine = createPolicyEngineApiClient();
 
-class ApiError extends Error {
-  status: number;
-  response: unknown;
-  constructor(message: string, status: number, response?: unknown) {
+/** How long a calculation may take before the page gives up on it. */
+const CALCULATION_TIMEOUT_MILLISECONDS = 120_000;
+
+/** Brief gateway failures, which are worth retrying. */
+const RETRYABLE_STATUSES = new Set([502, 503, 504]);
+
+/** A household calculation failed; `message` is written for the user. */
+export class HouseholdCalculationError extends Error {
+  override name = "HouseholdCalculationError";
+
+  constructor(
+    message: string,
+    /** The dashboard API's HTTP status, or null when no answer was read. */
+    readonly status: number | null,
+    /** Whether trying again at once could succeed. */
+    readonly retryable: boolean,
+  ) {
     super(message);
-    this.status = status;
-    this.response = response;
   }
 }
 
-async function fetchWithTimeout(
-  url: string,
-  options: RequestInit,
-  timeout = 120000
-): Promise<Response> {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
-    return response;
-  } finally {
-    clearTimeout(id);
-  }
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function peCalculate(body: Record<string, any>): Promise<any> {
-  const response = await fetchWithTimeout(
-    `${PE_API_URL}/us/calculate`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    }
+/**
+ * Whether React Query should retry a failed household calculation: once,
+ * and only after a brief gateway failure. Each attempt sends two
+ * calculations, and the firewall allows 30 a minute.
+ */
+export function shouldRetryHouseholdCalculation(
+  failureCount: number,
+  error: unknown,
+): boolean {
+  return (
+    failureCount < 1 &&
+    error instanceof HouseholdCalculationError &&
+    error.retryable
   );
-  if (!response.ok) {
-    let errorBody;
-    try {
-      errorBody = await response.json();
-    } catch {
-      errorBody = await response.text();
+}
+
+function dashboardApiMessage(body: unknown): string | null {
+  if (typeof body === "object" && body !== null) {
+    const message = (body as { message?: unknown }).message;
+    if (typeof message === "string" && message.length > 0) {
+      return message;
     }
-    throw new ApiError(
-      `PE API error: ${response.status}`,
-      response.status,
-      errorBody
+  }
+  return null;
+}
+
+/** Turns a failure of the dashboard API client into a message for the user. */
+function calculationError(error: PolicyEngineApiError): HouseholdCalculationError {
+  if (error.status === null) {
+    // On another origin, such as the dashboard's own host, the firewall's
+    // 429 has no CORS headers, so the browser reports a network failure.
+    // So does the dashboard API's 403 for an origin it does not allow.
+    return new HouseholdCalculationError(
+      "PolicyEngine's calculation service could not be reached. If many " +
+        "calculations have been run from your network in the last minute, " +
+        "wait a minute and try again.",
+      null,
+      false,
     );
   }
-  return response.json();
+  if (error.status === 429) {
+    return new HouseholdCalculationError(
+      "Too many calculations have been run from your network in the last " +
+        "minute. Wait a minute and try again.",
+      429,
+      false,
+    );
+  }
+  const detail =
+    dashboardApiMessage(error.body) ?? "Try again in a few minutes.";
+  return new HouseholdCalculationError(
+    `PolicyEngine could not calculate this household (HTTP ${error.status}): ${detail}`,
+    error.status,
+    RETRYABLE_STATUSES.has(error.status),
+  );
+}
+
+/** Values over the income axis, keyed by year. */
+type ValuesByYear = Record<string, number[]>;
+
+/** The parts of a calculated household this page reads. */
+interface CalculatedHousehold {
+  tax_units: Record<string, Record<string, ValuesByYear>>;
+  households: Record<string, Record<string, ValuesByYear>>;
+}
+
+async function calculateHousehold(
+  household: Record<string, unknown>,
+  policy?: Record<string, unknown>
+): Promise<CalculatedHousehold> {
+  const controller = new AbortController();
+  const timer = setTimeout(
+    () => controller.abort(),
+    CALCULATION_TIMEOUT_MILLISECONDS
+  );
+  try {
+    return await policyengine.calculateHousehold<CalculatedHousehold>(
+      { country: "us", household, policy },
+      { signal: controller.signal }
+    );
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new HouseholdCalculationError(
+        "The calculation took longer than two minutes. Try again.",
+        null,
+        false,
+      );
+    }
+    if (error instanceof PolicyEngineApiError) {
+      throw calculationError(error);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function buildReform(surtaxEnabled: boolean): Record<string, Record<string, boolean>> {
@@ -87,22 +164,23 @@ export const api = {
     const policy = buildReform(request.reform_params.surtax_enabled);
     const yearStr = String(request.year);
 
-    // Run baseline and reform in parallel
-    // PE API v1 uses "policy" (not "reform") for parameter overrides
+    // Run baseline and reform in parallel. Each resolves with the
+    // calculated household (the Public API's `result`); "policy" holds the
+    // reform's parameter changes.
     const [baselineResult, reformResult] = await Promise.all([
-      peCalculate({ household }),
-      peCalculate({ household, policy }),
+      calculateHousehold(household),
+      calculateHousehold(household, policy),
     ]);
 
-    // Extract net income arrays (PE API wraps response in "result")
+    // Extract net income arrays
     const baselineNetIncome: number[] =
-      baselineResult.result.households["your household"]["household_net_income"][yearStr];
+      baselineResult.households["your household"]["household_net_income"][yearStr];
     const reformNetIncome: number[] =
-      reformResult.result.households["your household"]["household_net_income"][yearStr];
+      reformResult.households["your household"]["household_net_income"][yearStr];
 
     // Extract AGI x-axis values
     const incomeRange: number[] =
-      baselineResult.result.tax_units["your tax unit"]["adjusted_gross_income"][yearStr];
+      baselineResult.tax_units["your tax unit"]["adjusted_gross_income"][yearStr];
 
     // Compute element-wise net income change
     const netIncomeChange = reformNetIncome.map(
