@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import ImpactAnalysis from '@/components/ImpactAnalysis';
 import AggregateImpact from '@/components/AggregateImpact';
 import PolicyOverview from '@/components/PolicyOverview';
-import { resetFailedHouseholdImpact } from '@/hooks/useHouseholdImpact';
+import { submitHouseholdRequest } from '@/hooks/useHouseholdImpact';
 import type { HouseholdRequest } from '@/lib/types';
 
 const US_STATES = [
@@ -135,10 +135,8 @@ function HouseholdImpactTab() {
   });
 
   const handleCalculate = () => {
-    const request = buildRequest();
-    // After a failure, the same household would otherwise keep showing it.
-    void resetFailedHouseholdImpact(queryClient, request);
-    setSubmittedRequest(request);
+    // A failed calculation of the same household runs again.
+    submitHouseholdRequest(queryClient, buildRequest(), setSubmittedRequest);
     setTriggered(true);
   };
 
@@ -283,7 +281,13 @@ function HouseholdImpactTab() {
               key={v}
               onClick={() => {
                 setMaxEarnings(v);
-                setSubmittedRequest(prev => prev ? { ...prev, max_earnings: v } : null);
+                if (submittedRequest) {
+                  submitHouseholdRequest(
+                    queryClient,
+                    { ...submittedRequest, max_earnings: v },
+                    setSubmittedRequest
+                  );
+                }
               }}
               className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                 maxEarnings === v
