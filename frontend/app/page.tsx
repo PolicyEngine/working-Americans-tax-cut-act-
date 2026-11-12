@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import ImpactAnalysis from '@/components/ImpactAnalysis';
 import AggregateImpact from '@/components/AggregateImpact';
@@ -9,6 +9,7 @@ import {
   submitHouseholdRequest,
   useHouseholdCalculationPause,
 } from '@/hooks/useHouseholdImpact';
+import { SHARED_LIMIT_EXPLANATION } from '@/lib/api';
 import type { HouseholdRequest } from '@/lib/types';
 
 const US_STATES = [
@@ -110,6 +111,12 @@ function HouseholdImpactTab() {
   // for a minute: everyone on the network shares the limit.
   const calculationPauseSeconds = useHouseholdCalculationPause();
   const calculationsPaused = calculationPauseSeconds > 0;
+  // The highlighted chart range follows the answer on screen.
+  const showShownRange = useCallback((request: HouseholdRequest | null) => {
+    if (request !== null) {
+      setMaxEarnings(request.max_earnings);
+    }
+  }, []);
 
   const handleMarriedChange = (value: boolean) => {
     setMarried(value);
@@ -270,7 +277,7 @@ function HouseholdImpactTab() {
         </div>
 
         {/* Calculate button */}
-        <div className="flex justify-end pt-4 border-t border-gray-200">
+        <div className="flex flex-col items-end pt-4 border-t border-gray-200">
           <button
             onClick={handleCalculate}
             disabled={calculationsPaused}
@@ -280,6 +287,12 @@ function HouseholdImpactTab() {
               ? `Calculate again in ${calculationPauseSeconds} s`
               : 'Calculate impact'}
           </button>
+          {calculationsPaused && (
+            <p role="status" className="mt-3 text-sm text-amber-800">
+              {SHARED_LIMIT_EXPLANATION}. This page can calculate again in{' '}
+              {calculationPauseSeconds} s.
+            </p>
+          )}
         </div>
       </div>
 
@@ -292,13 +305,15 @@ function HouseholdImpactTab() {
               key={v}
               disabled={calculationsPaused}
               onClick={() => {
-                setMaxEarnings(v);
-                if (submittedRequest) {
+                if (
+                  submittedRequest === null ||
                   submitHouseholdRequest(
                     queryClient,
                     { ...submittedRequest, max_earnings: v },
                     setSubmittedRequest
-                  );
+                  )
+                ) {
+                  setMaxEarnings(v);
                 }
               }}
               className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
@@ -314,7 +329,12 @@ function HouseholdImpactTab() {
       )}
 
       {/* Impact results */}
-      <ImpactAnalysis request={submittedRequest} triggered={triggered} maxEarnings={maxEarnings} />
+      <ImpactAnalysis
+        request={submittedRequest}
+        triggered={triggered}
+        maxEarnings={maxEarnings}
+        onShownRequestChange={showShownRange}
+      />
     </div>
   );
 }

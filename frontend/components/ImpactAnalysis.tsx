@@ -12,6 +12,7 @@ import {
   ReferenceLine,
   ReferenceDot,
 } from 'recharts';
+import { useEffect } from 'react';
 import { useHouseholdImpact } from '@/hooks/useHouseholdImpact';
 import type { HouseholdRequest } from '@/lib/types';
 
@@ -19,11 +20,25 @@ interface Props {
   request: HouseholdRequest | null;
   triggered: boolean;
   maxEarnings?: number;
+  /**
+   * Told which household's answer is shown, so the page can highlight its
+   * chart range: after a refusal for the firewall's limit, that is the
+   * household shown before, not the refused one.
+   */
+  onShownRequestChange?: (request: HouseholdRequest | null) => void;
 }
 
-export default function ImpactAnalysis({ request, triggered, maxEarnings }: Props) {
+export default function ImpactAnalysis({
+  request,
+  triggered,
+  maxEarnings,
+  onShownRequestChange,
+}: Props) {
   const { data, isLoading, error, shownRequest, rateLimitNotice } =
     useHouseholdImpact(request, triggered);
+  useEffect(() => {
+    onShownRequestChange?.(shownRequest);
+  }, [onShownRequestChange, shownRequest]);
 
   if (!triggered) return null;
 
@@ -58,7 +73,9 @@ export default function ImpactAnalysis({ request, triggered, maxEarnings }: Prop
 
   const benefitData = data.benefit_at_income;
 
-  const xMax = maxEarnings ?? data.x_axis_max;
+  // The range the shown answer was calculated for, which also decides
+  // whether the marker at its household's income is drawn.
+  const xMax = shownRequest?.max_earnings ?? maxEarnings ?? data.x_axis_max;
   const chartData = data.income_range
     .map((inc, i) => ({
       income: inc,
