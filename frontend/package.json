@@ -6,9 +6,11 @@
     "dev": "next dev -p 3007",
     "build": "next build",
     "start": "next start",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@policyengine/api-client": "^0.1.1",
     "@policyengine/ui-kit": "^0.12.0",
     "@tabler/icons-react": "^3.39.0",
     "@tanstack/react-query": "^5.17.9",
@@ -24,6 +26,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "tailwindcss": "^4.2.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^5.1.0"
   }
 }
