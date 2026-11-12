@@ -8,6 +8,28 @@ import { rememberShownHouseholdRequest } from "@/hooks/useHouseholdImpact";
 import { HouseholdCalculationError } from "@/lib/api";
 import type { HouseholdImpactResponse, HouseholdRequest } from "@/lib/types";
 
+// Server rendering runs no effects, and this repository has no DOM test
+// environment. So the components' effects are kept as they are rendered,
+// and `renderImpactAnalysis` runs them after the render, as React does on
+// the client; what they return to clean up runs when a test unmounts the
+// results area.
+const { pendingEffects, effectCleanups } = vi.hoisted(() => ({
+  pendingEffects: [] as Array<() => void | (() => void)>,
+  effectCleanups: [] as Array<() => void>,
+}));
+
+vi.mock("react", async (importOriginal) => {
+  const react = await importOriginal<typeof import("react")>();
+  return {
+    ...react,
+    // Every effect runs after every render, whatever its dependencies:
+    // running these effects again with the same values changes nothing.
+    useEffect: (effect: () => void | (() => void)) => {
+      pendingEffects.push(effect);
+    },
+  };
+});
+
 // Recharts draws nothing without a measured container, so each chart part
 // becomes an element that prints the props this test reads.
 vi.mock("recharts", () => {
@@ -66,55 +88,102 @@ const shownAnswer: HouseholdImpactResponse = {
   x_axis_max: 500000,
 };
 
+// Another household, with an income of $100,000.
+const otherRequest: HouseholdRequest = { ...shownRequest, income: 100000 };
+
+const otherAnswer: HouseholdImpactResponse = {
+  ...shownAnswer,
+  benefit_at_income: { baseline: 90000, reform: 90100, difference: 100 },
+};
+
+// A household the firewall refuses.
+const refusedRequest: HouseholdRequest = { ...shownRequest, income: 200000 };
+
+const REFUSAL_MESSAGE =
+  "Everyone on your network, such as a workshop or an office, shares a " +
+  "limit on calculations a minute, and it has been reached.";
+
 const queryClient = new QueryClient();
 
 afterEach(() => {
   queryClient.clear();
   rememberShownHouseholdRequest(queryClient, null);
+  pendingEffects.length = 0;
+  effectCleanups.length = 0;
 });
 
-/** Stores a refusal for the firewall's limit as `request`'s calculation. */
-async function refuse(request: HouseholdRequest): Promise<void> {
+/** Stores `failure` as `request`'s calculation. */
+async function fail(request: HouseholdRequest, failure: Error): Promise<void> {
   await queryClient
     .fetchQuery({
       queryKey: ["householdImpact", request],
-      queryFn: () =>
-        Promise.reject(
-          new HouseholdCalculationError(
-            "Everyone on your network, such as a workshop or an office, " +
-              "shares a limit on calculations a minute, and it has been reached.",
-            429,
-            false,
-            true,
-          ),
-        ),
+      queryFn: () => Promise.reject(failure),
       retry: false,
     })
     .catch(() => undefined);
 }
 
+/** Stores a refusal for the firewall's limit as `request`'s calculation. */
+async function refuse(request: HouseholdRequest): Promise<void> {
+  await fail(
+    request,
+    new HouseholdCalculationError(REFUSAL_MESSAGE, 429, false, true),
+  );
+}
+
+/** Stores `answer` as `request`'s calculation. */
+function answer(request: HouseholdRequest, impact: HouseholdImpactResponse): void {
+  queryClient.setQueryData(["householdImpact", request], impact);
+}
+
+/** Renders the results area for `request`, then runs its effects. */
 function renderImpactAnalysis(
-  request: HouseholdRequest,
-  maxEarnings: number,
+  request: HouseholdRequest | null,
+  props: {
+    triggered?: boolean;
+    maxEarnings?: number;
+    onShownRequestChange?: (request: HouseholdRequest | null) => void;
+  } = {},
 ): string {
-  return renderToStaticMarkup(
+  const markup = renderToStaticMarkup(
     createElement(
       QueryClientProvider,
       { client: queryClient },
-      createElement(ImpactAnalysis, { request, triggered: true, maxEarnings }),
+      createElement(ImpactAnalysis, {
+        request,
+        triggered: props.triggered ?? true,
+        maxEarnings: props.maxEarnings ?? request?.max_earnings,
+        onShownRequestChange: props.onShownRequestChange,
+      }),
     ),
   );
+  for (const effect of pendingEffects.splice(0)) {
+    const cleanup = effect();
+    if (typeof cleanup === "function") {
+      effectCleanups.push(cleanup);
+    }
+  }
+  return markup;
+}
+
+/** Removes the results area from the page, as leaving its tab does. */
+function unmountImpactAnalysis(): void {
+  for (const cleanup of effectCleanups.splice(0)) {
+    cleanup();
+  }
 }
 
 describe("ImpactAnalysis after a refusal", () => {
   it("draws the shown answer on its own range, with its income marker", async () => {
-    queryClient.setQueryData(["householdImpact", shownRequest], shownAnswer);
+    answer(shownRequest, shownAnswer);
     rememberShownHouseholdRequest(queryClient, shownRequest);
     // The reader chose the $200k range, and the firewall refused it.
-    const refusedRequest = { ...shownRequest, max_earnings: 200000 };
-    await refuse(refusedRequest);
+    const refusedRangeRequest = { ...shownRequest, max_earnings: 200000 };
+    await refuse(refusedRangeRequest);
 
-    const markup = renderImpactAnalysis(refusedRequest, 200000);
+    const markup = renderImpactAnalysis(refusedRangeRequest, {
+      maxEarnings: 200000,
+    });
 
     expect(markup).toContain('role="status"');
     expect(markup).toContain('data-domain="[0,500000]"');
@@ -128,5 +197,86 @@ describe("ImpactAnalysis after a refusal", () => {
     );
     // The marker at the shown household's income.
     expect(markup).toContain('<reference-dot data-x="300000" data-y="400">');
+  });
+
+  it("says the results are for the household shown before", async () => {
+    answer(shownRequest, shownAnswer);
+    rememberShownHouseholdRequest(queryClient, shownRequest);
+    await refuse(refusedRequest);
+
+    const markup = renderImpactAnalysis(refusedRequest);
+
+    expect(markup).toContain(REFUSAL_MESSAGE);
+    expect(markup).toContain(
+      "The results below are for the household shown before.",
+    );
+  });
+
+  it("shows the household it drew last, after a refusal", async () => {
+    // The reader calculated one household, then another, then went back
+    // to the first, which the page showed from the cache.
+    answer(shownRequest, shownAnswer);
+    answer(otherRequest, otherAnswer);
+    renderImpactAnalysis(shownRequest);
+    renderImpactAnalysis(otherRequest);
+    renderImpactAnalysis({ ...shownRequest });
+    await refuse(refusedRequest);
+
+    const markup = renderImpactAnalysis(refusedRequest);
+
+    expect(markup).toContain(REFUSAL_MESSAGE);
+    expect(markup).toContain("<strong>$300,000</strong>");
+    expect(markup).toContain('<reference-dot data-x="300000" data-y="400">');
+  });
+
+  it("tells the page which household's answer it draws after a refusal", async () => {
+    // The page highlights the chart range of the household this reports.
+    answer(shownRequest, shownAnswer);
+    renderImpactAnalysis(shownRequest);
+    const refusedRangeRequest = { ...shownRequest, max_earnings: 200000 };
+    await refuse(refusedRangeRequest);
+    const onShownRequestChange = vi.fn();
+
+    renderImpactAnalysis(refusedRangeRequest, {
+      maxEarnings: 200000,
+      onShownRequestChange,
+    });
+
+    expect(onShownRequestChange).toHaveBeenLastCalledWith(shownRequest);
+  });
+
+  it("shows a refusal itself after an error panel", async () => {
+    // The error panel replaced the earlier answer, so a later refusal must
+    // not bring that answer back.
+    answer(shownRequest, shownAnswer);
+    renderImpactAnalysis(shownRequest);
+    await fail(
+      otherRequest,
+      new HouseholdCalculationError("HTTP 500", 500, false, false),
+    );
+    renderImpactAnalysis(otherRequest);
+    await refuse(refusedRequest);
+
+    const markup = renderImpactAnalysis(refusedRequest);
+
+    expect(markup).toContain("Error Calculating Impact");
+    expect(markup).toContain(REFUSAL_MESSAGE);
+    expect(markup).not.toContain("<strong>$300,000</strong>");
+  });
+
+  it("shows a refusal itself after the results area is opened again", async () => {
+    // Leaving the household tab and coming back empties the results area,
+    // so a later refusal must not bring the earlier answer back.
+    answer(shownRequest, shownAnswer);
+    renderImpactAnalysis(shownRequest);
+    unmountImpactAnalysis();
+    renderImpactAnalysis(null, { triggered: false });
+    await refuse(refusedRequest);
+
+    const markup = renderImpactAnalysis(refusedRequest);
+
+    expect(markup).toContain("Error Calculating Impact");
+    expect(markup).toContain(REFUSAL_MESSAGE);
+    expect(markup).not.toContain("<strong>$300,000</strong>");
   });
 });
