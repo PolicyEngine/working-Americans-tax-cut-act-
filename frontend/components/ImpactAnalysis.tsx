@@ -22,7 +22,8 @@ interface Props {
 }
 
 export default function ImpactAnalysis({ request, triggered, maxEarnings }: Props) {
-  const { data, isLoading, error } = useHouseholdImpact(request, triggered);
+  const { data, isLoading, error, shownRequest, rateLimitNotice } =
+    useHouseholdImpact(request, triggered);
 
   if (!triggered) return null;
 
@@ -67,13 +68,19 @@ export default function ImpactAnalysis({ request, triggered, maxEarnings }: Prop
 
   return (
     <div className="space-y-8">
+      {rateLimitNotice && (
+        <div role="status" className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-amber-900">
+          <p>{rateLimitNotice}</p>
+          <p className="mt-1 text-sm">The results below are for the last household calculated.</p>
+        </div>
+      )}
       <h2 className="text-2xl font-bold text-primary">Impact Analysis</h2>
 
       {/* Your Personal Impact */}
       <div>
-        <h3 className="text-xl font-bold text-gray-800 mb-4">Your Personal Impact ({request?.year ?? 2026})</h3>
+        <h3 className="text-xl font-bold text-gray-800 mb-4">Your Personal Impact ({shownRequest?.year ?? 2026})</h3>
         <p className="text-gray-600 mb-4">
-          Based on your adjusted gross income of <strong>{formatCurrency(request?.income ?? 0)}</strong>
+          Based on your adjusted gross income of <strong>{formatCurrency(shownRequest?.income ?? 0)}</strong>
         </p>
 
         <div
@@ -107,7 +114,7 @@ export default function ImpactAnalysis({ request, triggered, maxEarnings }: Prop
       {/* Chart */}
       <div>
         <h3 className="text-lg font-semibold mb-4 text-gray-800">
-          Change in Net Income from WATCA Reform by Adjusted Gross Income ({request?.year ?? 2026})
+          Change in Net Income from WATCA Reform by Adjusted Gross Income ({shownRequest?.year ?? 2026})
         </h3>
         <ResponsiveContainer width="100%" height={400}>
           <LineChart data={chartData} margin={{ left: 30, right: 20, top: 5, bottom: 25 }}>
@@ -142,14 +149,14 @@ export default function ImpactAnalysis({ request, triggered, maxEarnings }: Prop
               name="Change in Net Income"
               dot={false}
             />
-            {request && request.income <= xMax && (
+            {shownRequest && shownRequest.income <= xMax && (
               <>
                 <ReferenceLine
-                  x={request.income}
+                  x={shownRequest.income}
                   stroke="#374151"
                   strokeDasharray="4 4"
                   strokeWidth={1}
-                  label={{ value: formatCurrency(request.income), position: 'insideTopRight', fill: '#374151', fontSize: 11, offset: 8 }}
+                  label={{ value: formatCurrency(shownRequest.income), position: 'insideTopRight', fill: '#374151', fontSize: 11, offset: 8 }}
                 />
                 <ReferenceLine
                   y={benefitData.difference}
@@ -159,7 +166,7 @@ export default function ImpactAnalysis({ request, triggered, maxEarnings }: Prop
                   label={{ value: formatCurrency(benefitData.difference), position: 'insideBottomRight', fill: '#374151', fontSize: 11, offset: 8 }}
                 />
                 <ReferenceDot
-                  x={request.income}
+                  x={shownRequest.income}
                   y={benefitData.difference}
                   r={6}
                   fill="#319795"

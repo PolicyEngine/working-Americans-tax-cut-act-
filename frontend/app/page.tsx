@@ -5,7 +5,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import ImpactAnalysis from '@/components/ImpactAnalysis';
 import AggregateImpact from '@/components/AggregateImpact';
 import PolicyOverview from '@/components/PolicyOverview';
-import { submitHouseholdRequest } from '@/hooks/useHouseholdImpact';
+import {
+  submitHouseholdRequest,
+  useHouseholdCalculationPause,
+} from '@/hooks/useHouseholdImpact';
 import type { HouseholdRequest } from '@/lib/types';
 
 const US_STATES = [
@@ -103,6 +106,10 @@ function HouseholdImpactTab() {
   const [maxEarnings, setMaxEarnings] = useState(500000);
   const [triggered, setTriggered] = useState(false);
   const [submittedRequest, setSubmittedRequest] = useState<HouseholdRequest | null>(null);
+  // After a refusal for the firewall's limit, the page calculates nothing
+  // for a minute: everyone on the network shares the limit.
+  const calculationPauseSeconds = useHouseholdCalculationPause();
+  const calculationsPaused = calculationPauseSeconds > 0;
 
   const handleMarriedChange = (value: boolean) => {
     setMarried(value);
@@ -136,8 +143,9 @@ function HouseholdImpactTab() {
 
   const handleCalculate = () => {
     // A failed calculation of the same household runs again.
-    submitHouseholdRequest(queryClient, buildRequest(), setSubmittedRequest);
-    setTriggered(true);
+    if (submitHouseholdRequest(queryClient, buildRequest(), setSubmittedRequest)) {
+      setTriggered(true);
+    }
   };
 
   return (
@@ -265,9 +273,12 @@ function HouseholdImpactTab() {
         <div className="flex justify-end pt-4 border-t border-gray-200">
           <button
             onClick={handleCalculate}
-            className="py-2.5 px-8 rounded-lg font-semibold text-white bg-primary-500 hover:bg-primary-600 transition-colors shadow-sm sm:w-auto w-full"
+            disabled={calculationsPaused}
+            className="py-2.5 px-8 rounded-lg font-semibold text-white bg-primary-500 hover:bg-primary-600 transition-colors shadow-sm sm:w-auto w-full disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Calculate impact
+            {calculationsPaused
+              ? `Calculate again in ${calculationPauseSeconds} s`
+              : 'Calculate impact'}
           </button>
         </div>
       </div>
@@ -279,6 +290,7 @@ function HouseholdImpactTab() {
           {[200000, 500000, 1000000, 2000000, 5000000, 10000000].map((v) => (
             <button
               key={v}
+              disabled={calculationsPaused}
               onClick={() => {
                 setMaxEarnings(v);
                 if (submittedRequest) {
